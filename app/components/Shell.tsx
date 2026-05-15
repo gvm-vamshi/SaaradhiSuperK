@@ -7,20 +7,20 @@ interface ShellProps {
   title: string;
   subtitle?: string;
   icon: React.ReactNode;
-  accent?: 'emerald' | 'violet' | 'slate';
+  accent?: 'red' | 'violet' | 'slate';
   children: React.ReactNode;
 }
 
-export function Shell({ title, subtitle, icon, accent = 'emerald', children }: ShellProps) {
-  const accentBg = { emerald: 'bg-emerald-600', violet: 'bg-violet-600', slate: 'bg-slate-800' }[accent];
+export function Shell({ title, subtitle, icon, accent = 'red', children }: ShellProps) {
+  const accentBg = { red: 'bg-red-600', violet: 'bg-violet-600', slate: 'bg-slate-800' }[accent];
   return (
     <div className="min-h-screen bg-slate-50">
       <header className={`${accentBg} text-white shadow-md`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg">{icon}</div>
+            <img src="/superk-logo.png" alt="SuperK" className="w-9 h-9 rounded-lg" />
             <div>
-              <div className="font-bold text-lg leading-tight">SuperK · {title}</div>
+              <div className="font-bold text-lg leading-tight">SuperK Mitra · {title}</div>
               {subtitle && <div className="text-xs opacity-80">{subtitle}</div>}
             </div>
           </div>
