@@ -1,0 +1,7 @@
+{
+  "installDependencies": true,
+  "startCommand": "npm run dev",
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  }
+}
