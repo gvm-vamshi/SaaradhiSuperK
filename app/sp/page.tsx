@@ -31,7 +31,7 @@ export default async function SpHome() {
       title="Store Partner"
       subtitle={`${profile.full_name} · ${profile.stores?.name ?? ''}`}
       icon={<User size={20}/>}
-      accent="emerald"
+      accent="red"
     >
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">

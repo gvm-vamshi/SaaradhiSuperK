@@ -15,7 +15,7 @@ export default async function NewTicketPage() {
   ]);
 
   return (
-    <Shell title="Store Partner" icon={<User size={20}/>} accent="emerald">
+    <Shell title="Store Partner" icon={<User size={20}/>} accent="red">
       <NewTicketWizard
         categories={(categories || []) as Category[]}
         kb={(kb || []) as KbEntry[]}

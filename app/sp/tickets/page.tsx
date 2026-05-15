@@ -19,7 +19,7 @@ export default async function SpTickets() {
   const all = tickets || [];
 
   return (
-    <Shell title="Store Partner" icon={<User size={20}/>} accent="emerald">
+    <Shell title="Store Partner" icon={<User size={20}/>} accent="red">
       <Link href="/sp" className="text-sm text-slate-600 hover:text-slate-900 mb-4 inline-block">← Back</Link>
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <div className="px-6 py-4 border-b border-slate-100 font-semibold">My tickets ({all.length})</div>

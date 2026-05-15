@@ -30,7 +30,7 @@ export default async function SpTicketDetail({ params }: { params: Promise<{ id:
   }
 
   return (
-    <Shell title="Store Partner" icon={<User size={20}/>} accent="emerald">
+    <Shell title="Store Partner" icon={<User size={20}/>} accent="red">
       <TicketDetail
         ticket={ticket}
         messages={messages || []}
