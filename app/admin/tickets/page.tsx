@@ -12,7 +12,7 @@ export default async function AdminAllTickets() {
   const { data } = await supabase
     .from('tickets')
     .select('*, stores(name), assigned:profiles!tickets_assigned_to_fkey(full_name)')
-    .order('created_at', { ascending: false }) as { data: (Ticket & { stores: { name: string } | null; assigned: { full_name: string } | null })[] };
+    .order('created_at', { ascending: false }) as unknown as { data: (Ticket & { stores: { name: string } | null; assigned: { full_name: string } | null })[] };
 
   const tickets = data || [];
 

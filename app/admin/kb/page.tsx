@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminKb() {
   const supabase = await createClient();
   const { data } = await supabase
-    .from('knowledge_base').select('*').order('id') as { data: KbEntry[] };
+    .from('knowledge_base').select('*').order('id') as unknown as { data: KbEntry[] };
   const kb = data || [];
 
   return (

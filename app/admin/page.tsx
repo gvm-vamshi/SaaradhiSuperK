@@ -10,31 +10,30 @@ export const dynamic = 'force-dynamic';
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  const [{ data: tickets }, { data: storeStats }] = await Promise.all([
-    supabase.from('tickets').select('*, stores(name)').order('created_at', { ascending: false }).limit(20) as Promise<{ data: (Ticket & { stores: { name: string } | null })[] }>,
-    supabase.from('v_store_stats').select('*') as Promise<{ data: StoreStats[] }>,
+  const [ticketsRes, statsRes] = await Promise.all([
+    supabase.from('tickets').select('*, stores(name)').order('created_at', { ascending: false }).limit(20),
+    supabase.from('v_store_stats').select('*'),
   ]);
 
-  const all = tickets || [];
-  const stats = storeStats || [];
+  const tickets = (ticketsRes.data || []) as (Ticket & { stores: { name: string } | null })[];
+  const storeStats = (statsRes.data || []) as StoreStats[];
 
-  // Counts from store stats (already aggregated by DB)
+  const all = tickets;
+  const stats = storeStats;
+
   const totalTickets = stats.reduce((s, x) => s + Number(x.total_tickets || 0), 0);
   const open         = stats.reduce((s, x) => s + Number(x.open_count || 0), 0);
   const inProg       = stats.reduce((s, x) => s + Number(x.in_progress_count || 0), 0);
   const resolved     = stats.reduce((s, x) => s + Number(x.resolved_count || 0), 0);
   const storesWithPending = stats.filter(x => Number(x.pending_count) > 0).length;
 
-  // By category for the chart-like list
   const byCategory: Record<string, number> = {};
   for (const t of all) byCategory[t.category] = (byCategory[t.category] || 0) + 1;
   const byCategorySorted = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
 
-  // By priority
   const byPriority = { Critical: 0, High: 0, Medium: 0, Low: 0 } as Record<string, number>;
   for (const t of all) byPriority[t.priority]++;
 
-  // Top stores by pending tickets
   const topByPending = [...stats].sort((a, b) => Number(b.pending_count) - Number(a.pending_count)).slice(0, 5);
 
   return (

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export default async function AdminStores({ searchParams }: { searchParams: Promise<{ filter?: string; sort?: string }> }) {
   const { filter = 'all', sort = 'pending' } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase.from('v_store_stats').select('*') as { data: StoreStats[] };
+  const { data } = await supabase.from('v_store_stats').select('*') as unknown as { data: StoreStats[] };
   const stats = data || [];
 
   const totalPending      = stats.reduce((s, x) => s + Number(x.pending_count || 0), 0);

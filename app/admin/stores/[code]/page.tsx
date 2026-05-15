@@ -13,11 +13,11 @@ export default async function AdminStoreDrillDown({ params }: { params: Promise<
   const supabase = await createClient();
 
   const { data: s } = await supabase
-    .from('v_store_stats').select('*').eq('code', code).maybeSingle() as { data: StoreStats | null };
+    .from('v_store_stats').select('*').eq('code', code).maybeSingle() as unknown as { data: StoreStats | null };
   if (!s) notFound();
 
   const { data: tickets } = await supabase
-    .from('tickets').select('*').eq('store_code', code).order('created_at', { ascending: false }) as { data: Ticket[] };
+    .from('tickets').select('*').eq('store_code', code).order('created_at', { ascending: false }) as unknown as { data: Ticket[] };
 
   const all = tickets || [];
   const pending  = all.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');

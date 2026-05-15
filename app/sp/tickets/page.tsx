@@ -14,7 +14,7 @@ export default async function SpTickets() {
     .from('tickets')
     .select('*')
     .eq('sp_id', user!.id)
-    .order('created_at', { ascending: false }) as { data: Ticket[] };
+    .order('created_at', { ascending: false }) as unknown as { data: Ticket[] };
 
   const all = tickets || [];
 

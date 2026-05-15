@@ -12,7 +12,7 @@ export default async function AdminUsers() {
     .from('profiles')
     .select('*, stores(name)')
     .order('role')
-    .order('full_name') as { data: (Profile & { stores: Store | null })[] };
+    .order('full_name') as unknown as { data: (Profile & { stores: Store | null })[] };
 
   const all = data || [];
   const sps    = all.filter(u => u.role === 'sp');

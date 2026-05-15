@@ -12,13 +12,12 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
-    .from('profiles').select('*').eq('id', user!.id).single() as { data: Profile };
+    .from('profiles').select('*').eq('id', user!.id).single() as unknown as { data: Profile };
 
-  // Tickets RLS already filters to the agent's categories — we just need to query.
   const { data: queue } = await supabase
     .from('tickets')
     .select('*, stores(name)')
-    .order('created_at', { ascending: false }) as { data: (Ticket & { stores: { name: string } | null })[] };
+    .order('created_at', { ascending: false }) as unknown as { data: (Ticket & { stores: { name: string } | null })[] };
 
   const all = queue || [];
   const mine = all.filter(t => t.assigned_to === user!.id);

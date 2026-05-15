@@ -4,7 +4,7 @@ import { Shell, KpiCard } from '@/app/components/Shell';
 import { User, Plus, Ticket as TicketIcon, MessageSquare, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
 import { priorityColor, statusColor, type Ticket, type Profile, type Store } from '@/lib/types';
 
-export const dynamic = 'force-dynamic'; // always fetch fresh
+export const dynamic = 'force-dynamic';
 
 export default async function SpHome() {
   const supabase = await createClient();
@@ -14,13 +14,13 @@ export default async function SpHome() {
     .from('profiles')
     .select('*, stores(*)')
     .eq('id', user!.id)
-    .single() as { data: Profile & { stores: Store | null } };
+    .single() as unknown as { data: Profile & { stores: Store | null } };
 
   const { data: tickets } = await supabase
     .from('tickets')
     .select('*')
     .eq('sp_id', user!.id)
-    .order('created_at', { ascending: false }) as { data: Ticket[] };
+    .order('created_at', { ascending: false }) as unknown as { data: Ticket[] };
 
   const all = tickets || [];
   const openCount = all.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').length;
@@ -34,7 +34,6 @@ export default async function SpHome() {
       accent="emerald"
     >
       <div className="space-y-6">
-        {/* Hero banner */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-8 text-white">
           <div className="text-sm opacity-90">Hello,</div>
           <div className="text-3xl font-bold">{profile.full_name.split(' ')[0]} 👋</div>
