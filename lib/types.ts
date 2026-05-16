@@ -25,7 +25,9 @@ export interface Store {
 export interface Category {
   id: number;
   category: string;
+  category_te: string | null;
   sub_category: string;
+  sub_category_te: string | null;
   default_priority: TicketPriority;
   routed_to_team: string | null;
   active: boolean;
@@ -63,7 +65,9 @@ export interface KbEntry {
   category: string;
   sub_category: string | null;
   question: string;
+  question_te: string | null;
   answer: string;
+  answer_te: string | null;
   keywords: string | null;
   status: string;
   owner: string | null;

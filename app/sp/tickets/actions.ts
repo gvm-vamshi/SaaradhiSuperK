@@ -1,12 +1,12 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import type { TicketStatus } from '@/lib/types';
 
 // ============================================================
 // createTicket — called by the SP new-ticket wizard
+// Round-robin assignment across all active agents
 // ============================================================
 export async function createTicket(input: {
   category: string;
@@ -18,30 +18,34 @@ export async function createTicket(input: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not authenticated.' };
 
-  // Get profile for store_code
   const { data: profile } = await supabase
     .from('profiles').select('store_code').eq('id', user.id).single();
   if (!profile?.store_code) return { error: 'No store assigned to this account.' };
 
-  // Look up the category to get default_priority and routing
+  // Look up category for default_priority
   const { data: cat } = await supabase
     .from('categories')
-    .select('default_priority, routed_to_team')
+    .select('default_priority')
     .eq('category', input.category)
     .eq('sub_category', input.sub_category)
     .maybeSingle();
 
-  // Find an agent that handles this category for auto-assignment
-  // (RLS allows SP to insert; assigned_to is set server-side to the first matching agent)
+  // Round-robin across all active agents
   const { data: agents } = await supabase
     .from('profiles')
-    .select('id, categories_handled')
+    .select('id, full_name')
     .eq('role', 'agent')
-    .eq('active', true);
+    .eq('active', true)
+    .order('full_name');
 
-  const assignedTo = agents?.find(a =>
-    Array.isArray(a.categories_handled) && a.categories_handled.includes(input.category)
-  )?.id ?? null;
+  let assignedTo: string | null = null;
+  if (agents && agents.length > 0) {
+    const { data: state } = await supabase
+      .from('routing_state').select('last_agent_ix').eq('id', 1).single();
+    const nextIx = (((state?.last_agent_ix ?? 0) + 1) % agents.length);
+    assignedTo = agents[nextIx].id;
+    await supabase.from('routing_state').update({ last_agent_ix: nextIx }).eq('id', 1);
+  }
 
   const { data: created, error } = await supabase
     .from('tickets')
@@ -61,8 +65,6 @@ export async function createTicket(input: {
 
   if (error) return { error: error.message };
 
-  revalidatePath('/sp');
-  revalidatePath('/sp/tickets');
   redirect(`/sp/tickets/${created.id}`);
 }
 
@@ -88,9 +90,6 @@ export async function postMessage(ticketId: number, body: string) {
   });
 
   if (error) return { error: error.message };
-
-  revalidatePath(`/sp/tickets/${ticketId}`);
-  revalidatePath(`/agent/tickets/${ticketId}`);
   return { ok: true };
 }
 
@@ -103,7 +102,6 @@ export async function updateTicketStatus(ticketId: number, status: TicketStatus)
   const patch: Record<string, unknown> = { status };
   if (status === 'Resolved') patch.resolved_at = new Date().toISOString();
   if (status === 'In Progress') {
-    // ensure first_response_at is set
     const { data: t } = await supabase
       .from('tickets').select('first_response_at').eq('id', ticketId).single();
     if (!t?.first_response_at) patch.first_response_at = new Date().toISOString();
@@ -111,10 +109,5 @@ export async function updateTicketStatus(ticketId: number, status: TicketStatus)
 
   const { error } = await supabase.from('tickets').update(patch).eq('id', ticketId);
   if (error) return { error: error.message };
-
-  revalidatePath(`/agent/tickets/${ticketId}`);
-  revalidatePath(`/sp/tickets/${ticketId}`);
-  revalidatePath('/agent');
-  revalidatePath('/admin');
   return { ok: true };
 }
