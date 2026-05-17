@@ -26,35 +26,28 @@ export function LoginForm() {
             <img src="/superk-logo.png" alt="SuperK" className="w-14 h-14 rounded-xl shadow-lg" />
             <div>
               <div className="text-3xl font-bold tracking-tight">SuperK Mitra</div>
-              <div className="text-red-300 text-sm">Store Partner Support · స్టోర్ పార్ట్‌నర్ మద్దతు</div>
+              <div className="text-red-300 text-sm">Store Partner Support</div>
             </div>
           </div>
-          <h1 className="text-4xl font-bold leading-tight">
-            Faster answers.<br/>Fewer ASM calls.
-            <span className="block text-2xl font-semibold text-red-200 mt-3">వేగవంతమైన సమాధానాలు. తక్కువ ASM కాల్‌లు.</span>
-          </h1>
-          <p className="text-slate-300 leading-relaxed">
-            Support portal for Store Partners.
-            <span className="block text-slate-400 text-sm mt-1">స్టోర్ పార్ట్‌నర్ల కోసం మద్దతు పోర్టల్.</span>
-          </p>
+          <h1 className="text-4xl font-bold leading-tight">Faster answers.<br/>Fewer ASM calls.</h1>
+          <p className="text-slate-300 leading-relaxed">Support portal for Store Partners.</p>
           <div className="grid grid-cols-2 gap-3 pt-4">
-            <Stat n="Priority"  l="Resolution" te="ప్రాధాన్యత పరిష్కారం" />
-            <Stat n="Dedicated" l="Support"    te="అంకిత మద్దతు" />
+            <Stat n="Priority"  l="Resolution" />
+            <Stat n="Dedicated" l="Support" />
           </div>
         </div>
 
         {/* Login panel */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="mb-6">
-            <div className="text-sm text-slate-500 font-medium">Welcome back · తిరిగి స్వాగతం</div>
+            <div className="text-sm text-slate-500 font-medium">Welcome back</div>
             <div className="text-2xl font-bold text-slate-900">Sign in to continue</div>
-            <div className="text-sm text-slate-600">కొనసాగడానికి సైన్ ఇన్ చేయండి</div>
           </div>
 
           <form action={submit} className="space-y-4">
             <div>
               <label htmlFor="email" className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                Username or Email · యూజర్‌నేమ్ లేదా ఇమెయిల్
+                Username or Email
               </label>
               <input
                 id="email" name="email" type="text" autoComplete="username" required
@@ -66,7 +59,7 @@ export function LoginForm() {
             </div>
             <div>
               <label htmlFor="password" className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                Password · పాస్‌వర్డ్
+                Password
               </label>
               <input
                 id="password" name="password" type="password" autoComplete="current-password" required
@@ -80,7 +73,7 @@ export function LoginForm() {
               type="submit" disabled={isPending}
               className="w-full bg-red-600 hover:bg-red-700 disabled:bg-slate-300 text-white font-semibold py-3 rounded-lg transition"
             >
-              {isPending ? 'Signing in…' : 'Sign In · సైన్ ఇన్'}
+              {isPending ? 'Signing in…' : 'Sign In'}
             </button>
           </form>
         </div>
@@ -89,12 +82,11 @@ export function LoginForm() {
   );
 }
 
-function Stat({ n, l, te }: { n: string; l: string; te: string }) {
+function Stat({ n, l }: { n: string; l: string }) {
   return (
     <div className="bg-white/10 backdrop-blur rounded-lg p-3 border border-white/10">
       <div className="text-xl font-bold text-red-300">{n}</div>
       <div className="text-xs text-slate-300">{l}</div>
-      <div className="text-xs text-slate-400 mt-0.5">{te}</div>
     </div>
   );
 }
