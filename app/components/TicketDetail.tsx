@@ -10,14 +10,14 @@ import { postMessage, updateTicketStatus } from '@/app/sp/tickets/actions';
 interface Props {
   ticket: Ticket;
   messages: TicketMessage[];
-  senderNames: Record<string, string>; // sender_id → full_name
+  senderNames: Record<string, string>;
   storeName: string;
   backHref: string;
-  // Agent / Admin gets action controls
   canManage?: boolean;
+  hidePriority?: boolean;
 }
 
-export function TicketDetail({ ticket, messages, senderNames, storeName, backHref, canManage }: Props) {
+export function TicketDetail({ ticket, messages, senderNames, storeName, backHref, canManage, hidePriority }: Props) {
   const [reply, setReply] = useState('');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -49,7 +49,6 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, backHre
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          {/* Header */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
               <div>
@@ -59,21 +58,22 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, backHre
                 </div>
               </div>
               <div className="flex gap-2">
-                <span className={`text-xs px-2 py-1 rounded-full border ${priorityColor(ticket.priority)}`}>{ticket.priority}</span>
+                {!hidePriority && (
+                  <span className={`text-xs px-2 py-1 rounded-full border ${priorityColor(ticket.priority)}`}>{ticket.priority}</span>
+                )}
                 <span className={`text-xs px-2 py-1 rounded-full ${statusColor(ticket.status)}`}>{ticket.status}</span>
               </div>
             </div>
             <div className="bg-slate-50 rounded-lg p-4 text-slate-700 whitespace-pre-line">{ticket.description}</div>
           </div>
 
-          {/* Conversation */}
           <div className="bg-white rounded-xl border border-slate-200 p-6">
             <div className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><MessageSquare size={18}/> Conversation</div>
             <div className="space-y-3 mb-4">
               {messages.length === 0 && <div className="text-sm text-slate-500 text-center py-4">No messages yet.</div>}
               {messages.map(m => (
                 <div key={m.id} className={`flex ${m.sender_role === 'sp' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-md rounded-lg p-3 ${m.sender_role === 'sp' ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-100 text-slate-900'}`}>
+                  <div className={`max-w-md rounded-lg p-3 ${m.sender_role === 'sp' ? 'bg-red-100 text-red-900' : 'bg-slate-100 text-slate-900'}`}>
                     <div className="text-xs font-semibold mb-1 opacity-70">{senderNames[m.sender_id] || m.sender_role} · {formatDate(m.created_at)}</div>
                     <div className="text-sm whitespace-pre-line">{m.body}</div>
                   </div>
@@ -87,10 +87,10 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, backHre
                   onChange={e => setReply(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
                   placeholder="Type a reply…"
-                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none"
+                  className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-red-500 outline-none"
                   disabled={isPending}
                 />
-                <button onClick={send} disabled={isPending || !reply.trim()} className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 text-white px-4 rounded-lg">
+                <button onClick={send} disabled={isPending || !reply.trim()} className="bg-red-600 hover:bg-red-700 disabled:bg-slate-300 text-white px-4 rounded-lg">
                   <Send size={16}/>
                 </button>
               </div>
@@ -99,7 +99,6 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, backHre
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <div className="font-semibold text-slate-900 mb-3">Details</div>

@@ -38,6 +38,7 @@ export default async function SpTicketDetail({ params }: { params: Promise<{ id:
         storeName={ticket.stores?.name ?? ticket.store_code}
         backHref="/sp/tickets"
         canManage={false}
+        hidePriority={true}
       />
     </Shell>
   );

@@ -3,7 +3,7 @@
 import { useState, useMemo, useTransition } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight, Send } from 'lucide-react';
-import { priorityColor, type Category, type KbEntry } from '@/lib/types';
+import type { Category, KbEntry } from '@/lib/types';
 import { createTicket } from '../actions';
 
 function groupByCategory(cats: Category[]) {
@@ -17,7 +17,6 @@ function groupByCategory(cats: Category[]) {
 
 type Step = 'category' | 'subcategory' | 'describe';
 
-// kb is accepted for API compatibility but unused in v1 — KB lookup comes in v2
 export function NewTicketWizard({ categories }: { categories: Category[]; kb: KbEntry[] }) {
   const grouped = useMemo(() => groupByCategory(categories), [categories]);
   const categoryNames = Object.keys(grouped);
@@ -31,10 +30,7 @@ export function NewTicketWizard({ categories }: { categories: Category[]; kb: Kb
   const [isPending, startTransition] = useTransition();
 
   const isOther = sub === 'Other';
-  const subRow = grouped[category]?.items.find(c => c.sub_category === sub);
-  const effectivePriority = subRow?.default_priority ?? 'Medium';
 
-  // Minimum description = 15 chars only when "Other" picked
   const minDesc = isOther ? 15 : 0;
   const descOk = desc.trim().length >= minDesc;
 
@@ -57,7 +53,6 @@ export function NewTicketWizard({ categories }: { categories: Category[]; kb: Kb
     <div>
       <Link href="/sp" className="text-sm text-slate-600 hover:text-slate-900 mb-4 inline-block">← Back</Link>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8 max-w-3xl">
-        {/* Step progress */}
         <div className="flex items-center gap-2 mb-6">
           {['Category', 'Sub-category', 'Describe & Submit'].map((label, i) => {
             const n = i + 1;
@@ -81,7 +76,6 @@ export function NewTicketWizard({ categories }: { categories: Category[]; kb: Kb
           })}
         </div>
 
-        {/* STEP 1: Category */}
         {step === 'category' && (
           <>
             <h2 className="text-2xl font-bold text-slate-900 mb-1">What&apos;s the issue?</h2>
@@ -98,7 +92,6 @@ export function NewTicketWizard({ categories }: { categories: Category[]; kb: Kb
           </>
         )}
 
-        {/* STEP 2: Sub-category */}
         {step === 'subcategory' && (
           <>
             <h2 className="text-2xl font-bold text-slate-900 mb-1">Pick a sub-category</h2>
@@ -143,7 +136,6 @@ export function NewTicketWizard({ categories }: { categories: Category[]; kb: Kb
           </>
         )}
 
-        {/* STEP 3: Describe + Submit (combined) */}
         {step === 'describe' && (
           <>
             <h2 className="text-2xl font-bold text-slate-900 mb-1">Describe & submit</h2>
@@ -157,7 +149,6 @@ export function NewTicketWizard({ categories }: { categories: Category[]; kb: Kb
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-slate-500">Category:</span> <span className="font-medium">{category}</span></div>
                 <div><span className="text-slate-500">Sub-category:</span> <span className="font-medium">{isOther && otherTitle ? `Other: ${otherTitle}` : sub}</span></div>
-                <div><span className="text-slate-500">Priority:</span> <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(effectivePriority)}`}>{effectivePriority}</span></div>
               </div>
             </div>
 

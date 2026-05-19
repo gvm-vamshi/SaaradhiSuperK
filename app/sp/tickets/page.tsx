@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell } from '@/app/components/Shell';
 import { User, ChevronRight } from 'lucide-react';
-import { priorityColor, statusColor, type Ticket } from '@/lib/types';
+import { statusColor, type Ticket } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +30,6 @@ export default async function SpTickets() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>{t.status}</span>
                   </div>
                   <div className="font-medium text-slate-900">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</div>
