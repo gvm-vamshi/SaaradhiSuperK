@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { AdminTabs } from './AdminTabs';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -11,11 +10,5 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .from('profiles').select('role').eq('id', user.id).single();
   if (profile?.role !== 'admin') redirect('/');
 
-  return (
-    <div>
-      {children}
-    </div>
-  );
+  return <div>{children}</div>;
 }
-
-export { AdminTabs };
