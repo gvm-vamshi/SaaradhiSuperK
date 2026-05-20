@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
-import { Headphones, Ticket as TicketIcon, Clock, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Headphones, Ticket as TicketIcon, Clock, TrendingUp, CheckCircle2, Phone } from 'lucide-react';
 import { priorityColor, statusColor, type Ticket, type Profile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -16,8 +16,8 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
 
   const { data: queue } = await supabase
     .from('tickets')
-    .select('*, stores(name)')
-    .order('created_at', { ascending: false }) as unknown as { data: (Ticket & { stores: { name: string } | null })[] };
+    .select('*, stores(name, phone)')
+    .order('created_at', { ascending: false }) as unknown as { data: (Ticket & { stores: { name: string; phone: string | null } | null })[] };
 
   const all = queue || [];
   const mine = all.filter(t => t.assigned_to === user!.id);
@@ -49,9 +49,9 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
         </div>
         <div className="divide-y divide-slate-100">
           {list.map(t => (
-            <Link key={t.id} href={`/agent/tickets/${t.id}`} className="block px-6 py-4 hover:bg-slate-50">
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
+            <div key={t.id} className="px-6 py-4 hover:bg-slate-50">
+              <div className="flex items-start justify-between gap-4">
+                <Link href={`/agent/tickets/${t.id}`} className="flex-1 min-w-0 block">
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
@@ -60,9 +60,16 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
                   </div>
                   <div className="font-medium text-slate-900">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</div>
                   <div className="text-sm text-slate-500 truncate">{t.description}</div>
-                </div>
+                </Link>
+                {t.stores?.phone && (
+                  <a href={`tel:${t.stores.phone}`}
+                    className="flex-shrink-0 flex items-center gap-1.5 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium px-3 py-1.5 rounded-lg"
+                    title={`Call ${t.stores.name}`}>
+                    <Phone size={12}/> {t.stores.phone}
+                  </a>
+                )}
               </div>
-            </Link>
+            </div>
           ))}
           {list.length === 0 && <div className="p-8 text-center text-slate-500">No tickets in this view.</div>}
         </div>

@@ -15,7 +15,7 @@ export default async function SpTicketDetail({ params }: { params: Promise<{ id:
   const supabase = await createClient();
 
   const { data: ticket } = await supabase
-    .from('tickets').select('*, stores(name)').eq('id', ticketId).single() as unknown as { data: (Ticket & { stores: Store | null }) | null };
+    .from('tickets').select('*, stores(name, phone)').eq('id', ticketId).single() as unknown as { data: (Ticket & { stores: Store | null }) | null };
   if (!ticket) notFound();
 
   const { data: messages } = await supabase

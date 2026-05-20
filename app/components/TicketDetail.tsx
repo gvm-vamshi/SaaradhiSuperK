@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Send } from 'lucide-react';
+import { MessageSquare, Send, Phone } from 'lucide-react';
 import { priorityColor, statusColor, formatDate, type Ticket, type TicketMessage, type TicketStatus } from '@/lib/types';
 import { postMessage, updateTicketStatus } from '@/app/sp/tickets/actions';
 
@@ -12,12 +12,13 @@ interface Props {
   messages: TicketMessage[];
   senderNames: Record<string, string>;
   storeName: string;
+  storePhone?: string | null;
   backHref: string;
   canManage?: boolean;
   hidePriority?: boolean;
 }
 
-export function TicketDetail({ ticket, messages, senderNames, storeName, backHref, canManage, hidePriority }: Props) {
+export function TicketDetail({ ticket, messages, senderNames, storeName, storePhone, backHref, canManage, hidePriority }: Props) {
   const [reply, setReply] = useState('');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -103,6 +104,14 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, backHre
           <div className="bg-white rounded-xl border border-slate-200 p-5">
             <div className="font-semibold text-slate-900 mb-3">Details</div>
             <Detail k="Store"          v={`${storeName} (${ticket.store_code})`}/>
+            {canManage && storePhone && (
+              <div className="py-2 border-b border-slate-100">
+                <div className="text-xs text-slate-500">Store contact</div>
+                <a href={`tel:${storePhone}`} className="text-sm text-red-700 font-medium hover:underline flex items-center gap-1.5 mt-0.5">
+                  <Phone size={14}/> {storePhone}
+                </a>
+              </div>
+            )}
             <Detail k="Created"        v={formatDate(ticket.created_at)}/>
             <Detail k="First response" v={formatDate(ticket.first_response_at)}/>
             <Detail k="Resolved"       v={formatDate(ticket.resolved_at)}/>

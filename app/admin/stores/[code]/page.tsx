@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
 import { AdminTabs } from '../../AdminTabs';
-import { Shield, MapPin, Ticket as TicketIcon, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
+import { Shield, MapPin, Phone, Ticket as TicketIcon, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 import { priorityColor, statusColor, formatDate, type StoreStats, type Ticket } from '@/lib/types';
 import { notFound } from 'next/navigation';
 
@@ -34,6 +34,11 @@ export default async function AdminStoreDrillDown({ params }: { params: Promise<
             <div className="flex items-center gap-2 text-slate-300 text-sm"><MapPin size={14}/> {s.city}, {s.state} · {s.region}</div>
             <div className="text-2xl font-bold mt-1">{s.name}</div>
             <div className="text-slate-300 text-sm mt-1">Store Code: <span className="font-mono">{s.code}</span> · Partner: {s.partner_name} · ASM: {s.asm_owner}</div>
+            {s.phone && (
+              <a href={`tel:${s.phone}`} className="inline-flex items-center gap-1.5 mt-3 bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-3 py-1.5 rounded-lg">
+                <Phone size={14}/> {s.phone}
+              </a>
+            )}
           </div>
           <div className="flex gap-2">
             {Number(s.critical_pending) > 0 && <span className="bg-rose-500 text-white text-xs px-3 py-1.5 rounded-full font-medium">🔴 {s.critical_pending} Critical</span>}

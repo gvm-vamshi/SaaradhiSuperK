@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
 import { AdminTabs } from '../AdminTabs';
-import { Shield, Store as StoreIcon, AlertTriangle, Clock, ChevronRight } from 'lucide-react';
+import { Shield, Store as StoreIcon, AlertTriangle, Clock, ChevronRight, Phone } from 'lucide-react';
 import type { StoreStats } from '@/lib/types';
 import { StoreFilter } from './StoreFilter';
 
@@ -45,7 +45,7 @@ export default async function AdminStores({ searchParams }: { searchParams: Prom
               <thead className="bg-slate-50 text-slate-600 text-xs uppercase">
                 <tr>
                   <th className="text-left  px-6 py-3">Store</th>
-                  <th className="text-left  px-4 py-3">Location</th>
+                  <th className="text-left  px-4 py-3">Contact</th>
                   <th className="text-left  px-4 py-3">ASM</th>
                   <th className="text-center px-4 py-3">Pending</th>
                   <th className="text-center px-4 py-3">Critical</th>
@@ -63,7 +63,13 @@ export default async function AdminStores({ searchParams }: { searchParams: Prom
                         <div className="text-xs text-slate-500 font-mono">{s.code} · {s.partner_name}</div>
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-slate-700">{s.city}<div className="text-xs text-slate-500">{s.region}</div></td>
+                    <td className="px-4 py-3">
+                      {s.phone ? (
+                        <a href={`tel:${s.phone}`} className="text-red-700 font-medium hover:underline flex items-center gap-1">
+                          <Phone size={12}/> {s.phone}
+                        </a>
+                      ) : <span className="text-slate-300">—</span>}
+                    </td>
                     <td className="px-4 py-3 text-slate-700">{s.asm_owner}</td>
                     <td className="px-4 py-3 text-center">
                       {Number(s.pending_count) > 0

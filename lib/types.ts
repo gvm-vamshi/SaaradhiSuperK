@@ -20,6 +20,7 @@ export interface Store {
   state: string | null;
   region: string | null;
   asm_owner: string | null;
+  phone: string | null;
 }
 
 export interface Category {
@@ -80,6 +81,7 @@ export interface StoreStats {
   state: string | null;
   region: string | null;
   asm_owner: string | null;
+  phone: string | null;
   partner_name: string;
   total_tickets: number;
   open_count: number;
@@ -90,7 +92,6 @@ export interface StoreStats {
   high_pending: number;
 }
 
-// ---------- UI helpers ----------
 export const priorityColor = (p: TicketPriority): string => ({
   Critical: 'bg-rose-100 text-rose-700 border-rose-300',
   High: 'bg-orange-100 text-orange-700 border-orange-300',
