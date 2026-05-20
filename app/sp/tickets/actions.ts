@@ -2,12 +2,9 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { notifySlack } from '@/lib/slack';
 import type { TicketStatus } from '@/lib/types';
 
-// ============================================================
-// createTicket — called by the SP new-ticket wizard
-// Round-robin assignment across all active agents
-// ============================================================
 export async function createTicket(input: {
   category: string;
   sub_category: string;
@@ -22,7 +19,6 @@ export async function createTicket(input: {
     .from('profiles').select('store_code').eq('id', user.id).single();
   if (!profile?.store_code) return { error: 'No store assigned to this account.' };
 
-  // Look up category for default_priority
   const { data: cat } = await supabase
     .from('categories')
     .select('default_priority')
@@ -47,6 +43,8 @@ export async function createTicket(input: {
     await supabase.from('routing_state').update({ last_agent_ix: nextIx }).eq('id', 1);
   }
 
+  const priority = cat?.default_priority ?? 'Medium';
+
   const { data: created, error } = await supabase
     .from('tickets')
     .insert({
@@ -55,22 +53,35 @@ export async function createTicket(input: {
       category: input.category,
       sub_category: input.sub_category,
       other_title: input.other_title,
-      priority: cat?.default_priority ?? 'Medium',
+      priority,
       description: input.description,
       status: 'Open',
       assigned_to: assignedTo,
     })
-    .select('id')
+    .select('id, ticket_code')
     .single();
 
   if (error) return { error: error.message };
 
+  // Fetch store name + phone for Slack alert
+  const { data: store } = await supabase
+    .from('stores').select('name, phone').eq('code', profile.store_code).single();
+
+  // Fire-and-forget Slack notification
+  notifySlack({
+    ticket_code: created.ticket_code,
+    store_name: store?.name ?? profile.store_code,
+    store_phone: store?.phone ?? null,
+    category: input.category,
+    sub_category: input.sub_category,
+    other_title: input.other_title,
+    priority,
+    description: input.description,
+  });
+
   redirect(`/sp/tickets/${created.id}`);
 }
 
-// ============================================================
-// postMessage — SP or Agent posts a reply on a ticket
-// ============================================================
 export async function postMessage(ticketId: number, body: string) {
   if (!body.trim()) return { error: 'Message cannot be empty.' };
 
@@ -93,9 +104,6 @@ export async function postMessage(ticketId: number, body: string) {
   return { ok: true };
 }
 
-// ============================================================
-// updateTicketStatus — Agent or Admin updates status
-// ============================================================
 export async function updateTicketStatus(ticketId: number, status: TicketStatus) {
   const supabase = await createClient();
 
