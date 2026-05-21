@@ -42,7 +42,7 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
     });
   };
 
-  const closed = ticket.status === 'Resolved' || ticket.status === 'Closed';
+  const closed = ticket.status === 'Resolved';
 
   return (
     <div>
@@ -128,10 +128,6 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
                 <button onClick={() => changeStatus('Resolved')} disabled={isPending || ticket.status === 'Resolved'}
                   className="w-full text-sm bg-emerald-100 hover:bg-emerald-200 disabled:opacity-50 text-emerald-700 font-medium py-2 rounded-lg">
                   Mark Resolved
-                </button>
-                <button onClick={() => changeStatus('Closed')} disabled={isPending || ticket.status === 'Closed'}
-                  className="w-full text-sm bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-medium py-2 rounded-lg">
-                  Close ticket
                 </button>
               </div>
             </div>
