@@ -6,6 +6,23 @@ import { priorityColor, statusColor, type Ticket, type Profile } from '@/lib/typ
 
 export const dynamic = 'force-dynamic';
 
+function pendingDays(createdAt: string): string {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (hours < 24) return `${hours}h`;
+  return `${days}d`;
+}
+
+function pendingColor(createdAt: string): string {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const days = diff / (1000 * 60 * 60 * 24);
+  if (days > 7) return 'bg-rose-100 text-rose-700';
+  if (days > 3) return 'bg-orange-100 text-orange-700';
+  if (days > 1) return 'bg-amber-100 text-amber-700';
+  return 'bg-blue-100 text-blue-700';
+}
+
 export default async function AgentHome({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
   const { filter = 'mine' } = await searchParams;
   const supabase = await createClient();
@@ -48,29 +65,37 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
           </div>
         </div>
         <div className="divide-y divide-slate-100">
-          {list.map(t => (
-            <div key={t.id} className="px-6 py-4 hover:bg-slate-50">
-              <div className="flex items-start justify-between gap-4">
-                <Link href={`/agent/tickets/${t.id}`} className="flex-1 min-w-0 block">
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>{t.status}</span>
-                    <span className="text-xs text-slate-500">· {t.stores?.name}</span>
-                  </div>
-                  <div className="font-medium text-slate-900">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</div>
-                  <div className="text-sm text-slate-500 truncate">{t.description}</div>
-                </Link>
-                {t.stores?.phone && (
-                  <a href={`tel:${t.stores.phone}`}
-                    className="flex-shrink-0 flex items-center gap-1.5 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium px-3 py-1.5 rounded-lg"
-                    title={`Call ${t.stores.name}`}>
-                    <Phone size={12}/> {t.stores.phone}
-                  </a>
-                )}
+          {list.map(t => {
+            const isPending = t.status !== 'Resolved' && t.status !== 'Closed';
+            return (
+              <div key={t.id} className="px-6 py-4 hover:bg-slate-50">
+                <div className="flex items-start justify-between gap-4">
+                  <Link href={`/agent/tickets/${t.id}`} className="flex-1 min-w-0 block">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>{t.status}</span>
+                      {isPending && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${pendingColor(t.created_at)}`}>
+                          ⏱ {pendingDays(t.created_at)}
+                        </span>
+                      )}
+                      <span className="text-xs text-slate-500">· {t.stores?.name}</span>
+                    </div>
+                    <div className="font-medium text-slate-900">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</div>
+                    <div className="text-sm text-slate-500 truncate">{t.description}</div>
+                  </Link>
+                  {t.stores?.phone && (
+                    <a href={`tel:${t.stores.phone}`}
+                      className="flex-shrink-0 flex items-center gap-1.5 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium px-3 py-1.5 rounded-lg"
+                      title={`Call ${t.stores.name}`}>
+                      <Phone size={12}/> {t.stores.phone}
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           {list.length === 0 && <div className="p-8 text-center text-slate-500">No tickets in this view.</div>}
         </div>
       </div>

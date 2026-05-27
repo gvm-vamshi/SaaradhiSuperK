@@ -18,6 +18,14 @@ interface Props {
   hidePriority?: boolean;
 }
 
+function pendingAge(createdAt: string): string {
+  const diff = Date.now() - new Date(createdAt).getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  if (days > 0) return `${days} day${days !== 1 ? 's' : ''}`;
+  return `${hours} hour${hours !== 1 ? 's' : ''}`;
+}
+
 export function TicketDetail({ ticket, messages, senderNames, storeName, storePhone, backHref, canManage, hidePriority }: Props) {
   const [reply, setReply] = useState('');
   const [error, setError] = useState('');
@@ -43,13 +51,12 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
   };
 
   const closed = ticket.status === 'Resolved';
+  const isStillPending = ticket.status !== 'Resolved' && ticket.status !== 'Closed';
 
-  // For SP view (hidePriority=true), mask agent/admin names as "Mitra - Agent"
   const displayName = (m: TicketMessage) => {
     if (m.sender_role === 'sp') {
       return senderNames[m.sender_id] || 'Store Partner';
     }
-    // Agent or Admin
     if (hidePriority) {
       return 'Mitra - Agent';
     }
@@ -125,6 +132,12 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
               </div>
             )}
             <Detail k="Created"        v={formatDate(ticket.created_at)}/>
+            {canManage && isStillPending && (
+              <div className="py-2 border-b border-slate-100">
+                <div className="text-xs text-slate-500">Pending since</div>
+                <div className="text-sm text-orange-700 font-semibold">⏱ {pendingAge(ticket.created_at)}</div>
+              </div>
+            )}
             <Detail k="First response" v={formatDate(ticket.first_response_at)}/>
             <Detail k="Resolved"       v={formatDate(ticket.resolved_at)}/>
           </div>
