@@ -3,6 +3,7 @@ import { Shell } from '@/app/components/Shell';
 import { AdminTabs } from '../AdminTabs';
 import { Shield } from 'lucide-react';
 import { priorityColor, statusColor, formatDate, type Ticket } from '@/lib/types';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,7 +38,7 @@ export default async function AdminAllTickets() {
             <tbody className="divide-y divide-slate-100">
               {tickets.map(t => (
                 <tr key={t.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-3 font-mono text-xs">{t.ticket_code}</td>
+                  <td className="px-4 py-3"><Link href={`/admin/tickets/${t.id}`} className="font-mono text-xs text-red-700 hover:underline">{t.ticket_code}</Link></td>
                   <td className="px-4 py-3">{t.stores?.name ?? t.store_code}</td>
                   <td className="px-4 py-3">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</td>
                   <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span></td>

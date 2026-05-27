@@ -44,6 +44,18 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
 
   const closed = ticket.status === 'Resolved';
 
+  // For SP view (hidePriority=true), mask agent/admin names as "Mitra - Agent"
+  const displayName = (m: TicketMessage) => {
+    if (m.sender_role === 'sp') {
+      return senderNames[m.sender_id] || 'Store Partner';
+    }
+    // Agent or Admin
+    if (hidePriority) {
+      return 'Mitra - Agent';
+    }
+    return senderNames[m.sender_id] || m.sender_role;
+  };
+
   return (
     <div>
       <Link href={backHref} className="text-sm text-slate-600 hover:text-slate-900 mb-4 inline-block">← Back</Link>
@@ -75,7 +87,7 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
               {messages.map(m => (
                 <div key={m.id} className={`flex ${m.sender_role === 'sp' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-md rounded-lg p-3 ${m.sender_role === 'sp' ? 'bg-red-100 text-red-900' : 'bg-slate-100 text-slate-900'}`}>
-                    <div className="text-xs font-semibold mb-1 opacity-70">{senderNames[m.sender_id] || m.sender_role} · {formatDate(m.created_at)}</div>
+                    <div className="text-xs font-semibold mb-1 opacity-70">{displayName(m)} · {formatDate(m.created_at)}</div>
                     <div className="text-sm whitespace-pre-line">{m.body}</div>
                   </div>
                 </div>

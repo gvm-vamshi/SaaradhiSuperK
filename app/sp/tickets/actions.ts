@@ -2,7 +2,6 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { notifySlack } from '@/lib/slack';
 import type { TicketStatus } from '@/lib/types';
 
 export async function createTicket(input: {
@@ -26,7 +25,6 @@ export async function createTicket(input: {
     .eq('sub_category', input.sub_category)
     .maybeSingle();
 
-  // Round-robin across all active agents
   const { data: agents } = await supabase
     .from('profiles')
     .select('id, full_name')
@@ -43,8 +41,6 @@ export async function createTicket(input: {
     await supabase.from('routing_state').update({ last_agent_ix: nextIx }).eq('id', 1);
   }
 
-  const priority = cat?.default_priority ?? 'Medium';
-
   const { data: created, error } = await supabase
     .from('tickets')
     .insert({
@@ -53,32 +49,15 @@ export async function createTicket(input: {
       category: input.category,
       sub_category: input.sub_category,
       other_title: input.other_title,
-      priority,
+      priority: cat?.default_priority ?? 'Medium',
       description: input.description,
       status: 'Open',
       assigned_to: assignedTo,
     })
-    .select('id, ticket_code')
+    .select('id')
     .single();
 
   if (error) return { error: error.message };
-
-  // Fetch store name + phone for Slack alert
-  const { data: store } = await supabase
-    .from('stores').select('name, phone').eq('code', profile.store_code).single();
-
-  // Fire-and-forget Slack notification
-  notifySlack({
-    ticket_code: created.ticket_code,
-    store_name: store?.name ?? profile.store_code,
-    store_phone: store?.phone ?? null,
-    category: input.category,
-    sub_category: input.sub_category,
-    other_title: input.other_title,
-    priority,
-    description: input.description,
-  });
-
   redirect(`/sp/tickets/${created.id}`);
 }
 
@@ -93,10 +72,13 @@ export async function postMessage(ticketId: number, body: string) {
     .from('profiles').select('role').eq('id', user.id).single();
   if (!profile) return { error: 'Profile not found.' };
 
+  // Admin messages are saved as 'agent' so SP sees "Mitra - Agent"
+  const senderRole = profile.role === 'admin' ? 'agent' : profile.role;
+
   const { error } = await supabase.from('ticket_messages').insert({
     ticket_id: ticketId,
     sender_id: user.id,
-    sender_role: profile.role,
+    sender_role: senderRole,
     body: body.trim(),
   });
 
