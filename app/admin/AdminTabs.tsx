@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Store, Ticket, Users } from 'lucide-react';
+import { BarChart3, Store, Ticket, Users, Settings } from 'lucide-react';
 
 const TABS = [
   { href: '/admin',          label: 'Dashboard',   icon: <BarChart3 size={14}/> },
   { href: '/admin/stores',   label: 'Stores',      icon: <Store size={14}/> },
   { href: '/admin/tickets',  label: 'All Tickets', icon: <Ticket size={14}/> },
   { href: '/admin/users',    label: 'Users',       icon: <Users size={14}/> },
+  { href: '/admin/routing',  label: 'Routing',     icon: <Settings size={14}/> },
 ];
 
 export function AdminTabs() {

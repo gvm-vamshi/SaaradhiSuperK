@@ -3,9 +3,10 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MessageSquare, Send, Phone } from 'lucide-react';
+import { MessageSquare, Send, Phone, UserCog } from 'lucide-react';
 import { priorityColor, statusColor, formatDate, type Ticket, type TicketMessage, type TicketStatus } from '@/lib/types';
 import { postMessage, updateTicketStatus } from '@/app/sp/tickets/actions';
+import { reassignTicket } from '@/app/admin/routing/actions';
 
 interface Props {
   ticket: Ticket;
@@ -16,6 +17,8 @@ interface Props {
   backHref: string;
   canManage?: boolean;
   hidePriority?: boolean;
+  agents?: { id: string; full_name: string }[];
+  assignedName?: string;
 }
 
 function pendingAge(createdAt: string): string {
@@ -26,7 +29,7 @@ function pendingAge(createdAt: string): string {
   return `${hours} hour${hours !== 1 ? 's' : ''}`;
 }
 
-export function TicketDetail({ ticket, messages, senderNames, storeName, storePhone, backHref, canManage, hidePriority }: Props) {
+export function TicketDetail({ ticket, messages, senderNames, storeName, storePhone, backHref, canManage, hidePriority, agents, assignedName }: Props) {
   const [reply, setReply] = useState('');
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
@@ -46,6 +49,16 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
     startTransition(async () => {
       const res = await updateTicketStatus(ticket.id, status);
       if (res && 'error' in res) setError(res.error || 'Failed to update.');
+      else router.refresh();
+    });
+  };
+
+  const handleReassign = (agentId: string) => {
+    if (!agentId) return;
+    setError('');
+    startTransition(async () => {
+      const res = await reassignTicket(ticket.id, agentId);
+      if (res?.error) setError(res.error);
       else router.refresh();
     });
   };
@@ -131,6 +144,9 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
                 </a>
               </div>
             )}
+            {canManage && assignedName && (
+              <Detail k="Assigned to" v={assignedName}/>
+            )}
             <Detail k="Created"        v={formatDate(ticket.created_at)}/>
             {canManage && isStillPending && (
               <div className="py-2 border-b border-slate-100">
@@ -141,6 +157,24 @@ export function TicketDetail({ ticket, messages, senderNames, storeName, storePh
             <Detail k="First response" v={formatDate(ticket.first_response_at)}/>
             <Detail k="Resolved"       v={formatDate(ticket.resolved_at)}/>
           </div>
+
+          {/* Reassign — only if agents list is passed (admin view) */}
+          {canManage && agents && agents.length > 0 && (
+            <div className="bg-white rounded-xl border border-slate-200 p-5">
+              <div className="font-semibold text-slate-900 mb-3 flex items-center gap-2"><UserCog size={16}/> Reassign</div>
+              <select
+                defaultValue=""
+                onChange={e => handleReassign(e.target.value)}
+                disabled={isPending}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 outline-none"
+              >
+                <option value="" disabled>Select agent…</option>
+                {agents.map(a => (
+                  <option key={a.id} value={a.id}>{a.full_name}{a.id === ticket.assigned_to ? ' (current)' : ''}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {canManage && (
             <div className="bg-white rounded-xl border border-slate-200 p-5">

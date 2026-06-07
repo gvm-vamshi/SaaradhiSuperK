@@ -25,11 +25,12 @@ export async function createTicket(input: {
     .eq('sub_category', input.sub_category)
     .maybeSingle();
 
+  // Round-robin across routing-active agents only
   const { data: agents } = await supabase
     .from('profiles')
     .select('id, full_name')
     .eq('role', 'agent')
-    .eq('active', true)
+    .eq('routing_active', true)
     .order('full_name');
 
   let assignedTo: string | null = null;
@@ -72,7 +73,6 @@ export async function postMessage(ticketId: number, body: string) {
     .from('profiles').select('role').eq('id', user.id).single();
   if (!profile) return { error: 'Profile not found.' };
 
-  // Admin messages are saved as 'agent' so SP sees "Mitra - Agent"
   const senderRole = profile.role === 'admin' ? 'agent' : profile.role;
 
   const { error } = await supabase.from('ticket_messages').insert({
