@@ -38,28 +38,49 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
 
   const all = queue || [];
   const mine = all.filter(t => t.assigned_to === user!.id);
+  const open = all.filter(t => t.status === 'Open');
+  const inProgress = all.filter(t => t.status === 'In Progress');
+  const resolved = all.filter(t => t.status === 'Resolved');
 
   let list = all;
-  if (filter === 'mine')  list = mine;
-  if (filter === 'open')  list = all.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
+  if (filter === 'mine')        list = mine;
+  if (filter === 'open')        list = open;
+  if (filter === 'inprogress')  list = inProgress;
+  if (filter === 'resolved')    list = resolved;
+
+  const filters = [
+    ['mine',       'Mine',        mine.length],
+    ['open',       'Open',        open.length],
+    ['inprogress', 'In Progress', inProgress.length],
+    ['resolved',   'Resolved',    resolved.length],
+    ['all',        'All',         all.length],
+  ];
 
   return (
     <Shell title="Agent Console" subtitle={`${profile.full_name} · ${profile.team ?? ''}`} icon={<Headphones size={20}/>} accent="violet">
       <div className="grid md:grid-cols-4 gap-4 mb-6">
-        <KpiCard icon={<TicketIcon className="text-violet-600"/>} label="Assigned to me" value={mine.length} />
-        <KpiCard icon={<Clock      className="text-orange-600"/>}  label="Open in queue" value={all.filter(t => t.status === 'Open').length} />
-        <KpiCard icon={<TrendingUp className="text-blue-600"/>}    label="In progress"    value={all.filter(t => t.status === 'In Progress').length} />
-        <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>} label="Resolved"     value={all.filter(t => t.status === 'Resolved').length} />
+        <Link href="/agent?filter=mine">
+          <KpiCard icon={<TicketIcon className="text-violet-600"/>} label="Assigned to me" value={mine.length} />
+        </Link>
+        <Link href="/agent?filter=open">
+          <KpiCard icon={<Clock className="text-orange-600"/>} label="Open in queue" value={open.length} />
+        </Link>
+        <Link href="/agent?filter=inprogress">
+          <KpiCard icon={<TrendingUp className="text-blue-600"/>} label="In progress" value={inProgress.length} />
+        </Link>
+        <Link href="/agent?filter=resolved">
+          <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>} label="Resolved" value={resolved.length} />
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
           <div className="font-semibold">Tickets — {profile.team}</div>
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
-            {[['mine','Mine'],['open','Open'],['all','All']].map(([k,l]) => (
-              <Link key={k} href={`/agent?filter=${k}`}
+          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg flex-wrap">
+            {filters.map(([k, l, count]) => (
+              <Link key={k as string} href={`/agent?filter=${k}`}
                 className={`text-sm px-3 py-1 rounded-md ${filter === k ? 'bg-white shadow text-violet-700 font-medium' : 'text-slate-600'}`}>
-                {l}
+                {l as string} ({count as number})
               </Link>
             ))}
           </div>
