@@ -1,26 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-
-export default async function Home() {
+export default async function AsmLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-
   if (!user) redirect('/login');
 
   const { data: profile } = await supabase
     .from('profiles').select('role').eq('id', user.id).single();
+  if (profile?.role !== 'asm') redirect('/');
 
-  if (!profile) redirect('/login');
-
-  const routes: Record<string, string> = {
-    admin: '/admin',
-    agent: '/agent',
-    asm: '/asm',
-    sae: '/sae',
-    sp: '/sp',
-  };
-
-  redirect(routes[profile.role] || '/login');
+  return <div>{children}</div>;
 }

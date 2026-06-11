@@ -25,7 +25,6 @@ export async function createTicket(input: {
     .eq('sub_category', input.sub_category)
     .maybeSingle();
 
-  // Round-robin across routing-active agents only
   const { data: agents } = await supabase
     .from('profiles')
     .select('id, full_name')
@@ -73,7 +72,8 @@ export async function postMessage(ticketId: number, body: string) {
     .from('profiles').select('role').eq('id', user.id).single();
   if (!profile) return { error: 'Profile not found.' };
 
-  const senderRole = profile.role === 'admin' ? 'agent' : profile.role;
+  // Admin and ASM messages appear as agent to SP
+  const senderRole = (profile.role === 'admin' || profile.role === 'asm') ? 'agent' : profile.role;
 
   const { error } = await supabase.from('ticket_messages').insert({
     ticket_id: ticketId,

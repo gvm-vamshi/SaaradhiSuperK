@@ -11,7 +11,6 @@ export async function signIn(formData: FormData) {
     return { error: 'Username/email and password are required.' };
   }
 
-  // If no '@', assume username for an SP and append the synthetic domain
   if (!email.includes('@')) {
     email = `${email}@superk.in`;
   }
@@ -26,11 +25,15 @@ export async function signIn(formData: FormData) {
   const { data: profile } = await supabase
     .from('profiles').select('role').eq('id', user.id).single();
 
-  const home = profile?.role === 'admin' ? '/admin'
-            : profile?.role === 'agent' ? '/agent'
-            : '/sp';
+  const routes: Record<string, string> = {
+    admin: '/admin',
+    agent: '/agent',
+    asm: '/asm',
+    sae: '/sae',
+    sp: '/sp',
+  };
 
-  redirect(home);
+  redirect(routes[profile?.role ?? 'sp'] || '/sp');
 }
 
 export async function signOut() {
