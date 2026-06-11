@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
-import { Shield, Ticket as TicketIcon, Clock, CheckCircle2, Store, Phone } from 'lucide-react';
-import { priorityColor, statusColor, formatDate, type Ticket, type Profile } from '@/lib/types';
+import { Shield, Ticket as TicketIcon, Clock, CheckCircle2, Phone } from 'lucide-react';
+import { priorityColor, statusColor, type Ticket, type Profile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,7 +29,6 @@ export default async function AsmHome() {
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('id', user!.id).single() as unknown as { data: Profile };
 
-  // RLS filters to only this ASM's stores
   const { data: tickets } = await supabase
     .from('tickets')
     .select('*, stores(name, phone)')
@@ -54,7 +53,6 @@ export default async function AsmHome() {
           <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>} label="Resolved" value={resolved.length} />
         </div>
 
-        {/* Aging */}
         <div className="bg-white rounded-xl border border-slate-200 p-6">
           <div className="font-semibold mb-4">Pending tickets by age</div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -67,7 +65,6 @@ export default async function AsmHome() {
           </div>
         </div>
 
-        {/* Ticket list */}
         <div className="bg-white rounded-xl border border-slate-200">
           <div className="px-6 py-4 border-b border-slate-100 font-semibold">
             My stores&apos; tickets ({all.length})
@@ -96,7 +93,7 @@ export default async function AsmHome() {
                       <div className="text-sm text-slate-500 truncate">{t.description}</div>
                     </div>
                     {t.stores?.phone && (
-                      <a href={`tel:${t.stores.phone}`} onClick={e => e.stopPropagation()}
+                      <a href={`tel:${t.stores.phone}`}
                         className="flex-shrink-0 flex items-center gap-1.5 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium px-3 py-1.5 rounded-lg">
                         <Phone size={12}/> {t.stores.phone}
                       </a>

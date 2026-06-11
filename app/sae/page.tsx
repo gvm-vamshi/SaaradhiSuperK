@@ -13,7 +13,6 @@ export default async function SaeHome() {
   const { data: profile } = await supabase
     .from('profiles').select('*').eq('id', user!.id).single() as unknown as { data: Profile };
 
-  // RLS filters to only this SAE's assigned stores
   const { data: tickets } = await supabase
     .from('tickets')
     .select('*, stores(name, phone)')
@@ -51,7 +50,7 @@ export default async function SaeHome() {
                     <div className="text-sm text-slate-500 truncate">{t.description}</div>
                   </div>
                   {t.stores?.phone && (
-                    <a href={`tel:${t.stores.phone}`} onClick={e => e.stopPropagation()}
+                    <a href={`tel:${t.stores.phone}`}
                       className="flex-shrink-0 flex items-center gap-1.5 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium px-3 py-1.5 rounded-lg">
                       <Phone size={12}/> {t.stores.phone}
                     </a>
