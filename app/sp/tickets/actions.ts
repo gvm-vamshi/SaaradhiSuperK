@@ -25,6 +25,7 @@ export async function createTicket(input: {
     .eq('sub_category', input.sub_category)
     .maybeSingle();
 
+  // Round-robin across routing-active agents only
   const { data: agents } = await supabase
     .from('profiles')
     .select('id, full_name')
