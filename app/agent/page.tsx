@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
-import { Headphones, Ticket as TicketIcon, Clock, TrendingUp, CheckCircle2, Phone } from 'lucide-react';
-import { priorityColor, statusColor, type Ticket, type Profile } from '@/lib/types';
+import { Headphones, Ticket as TicketIcon, Clock, TrendingUp, CheckCircle2, Phone, MessageCircle } from 'lucide-react';
+import { priorityColor, statusColor, type Ticket, type Profile, type TicketMessage } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,36 +37,69 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
     .order('created_at', { ascending: false }) as unknown as { data: (Ticket & { stores: { name: string; phone: string | null } | null })[] };
 
   const all = queue || [];
+
+  // Fetch last message per ticket to determine "awaiting response"
+  const ticketIds = all.map(t => t.id);
+  let lastMessages: Record<number, TicketMessage> = {};
+  if (ticketIds.length > 0) {
+    const { data: msgs } = await supabase
+      .from('ticket_messages')
+      .select('*')
+      .in('ticket_id', ticketIds)
+      .order('created_at', { ascending: false }) as unknown as { data: TicketMessage[] };
+
+    // Get the latest message per ticket
+    for (const m of (msgs || [])) {
+      if (!lastMessages[m.ticket_id]) {
+        lastMessages[m.ticket_id] = m;
+      }
+    }
+  }
+
+  // A ticket needs response if: not resolved AND (last message is from SP OR no messages at all)
+  const needsResponse = (t: Ticket) => {
+    if (t.status === 'Resolved' || t.status === 'Closed') return false;
+    const last = lastMessages[t.id];
+    if (!last) return true; // no messages = needs first response
+    return last.sender_role === 'sp';
+  };
+
   const mine = all.filter(t => t.assigned_to === user!.id);
   const open = all.filter(t => t.status === 'Open');
   const inProgress = all.filter(t => t.status === 'In Progress');
   const resolved = all.filter(t => t.status === 'Resolved');
+  const awaiting = all.filter(t => needsResponse(t));
 
   let list = all;
   if (filter === 'mine')        list = mine;
   if (filter === 'open')        list = open;
   if (filter === 'inprogress')  list = inProgress;
   if (filter === 'resolved')    list = resolved;
+  if (filter === 'awaiting')    list = awaiting;
 
   const filters = [
-    ['mine',       'Mine',        mine.length],
-    ['open',       'Open',        open.length],
-    ['inprogress', 'In Progress', inProgress.length],
-    ['resolved',   'Resolved',    resolved.length],
-    ['all',        'All',         all.length],
+    ['awaiting',   '⚠ Awaiting',  awaiting.length],
+    ['mine',       'Mine',         mine.length],
+    ['open',       'Open',         open.length],
+    ['inprogress', 'In Progress',  inProgress.length],
+    ['resolved',   'Resolved',     resolved.length],
+    ['all',        'All',          all.length],
   ];
 
   return (
     <Shell title="Agent Console" subtitle={`${profile.full_name} · ${profile.team ?? ''}`} icon={<Headphones size={20}/>} accent="violet">
-      <div className="grid md:grid-cols-4 gap-4 mb-6">
+      <div className="grid md:grid-cols-5 gap-4 mb-6">
+        <Link href="/agent?filter=awaiting">
+          <KpiCard icon={<MessageCircle className="text-rose-600"/>} label="Awaiting Response" value={awaiting.length} />
+        </Link>
         <Link href="/agent?filter=mine">
           <KpiCard icon={<TicketIcon className="text-violet-600"/>} label="Assigned to me" value={mine.length} />
         </Link>
         <Link href="/agent?filter=open">
-          <KpiCard icon={<Clock className="text-orange-600"/>} label="Open in queue" value={open.length} />
+          <KpiCard icon={<Clock className="text-orange-600"/>} label="Open" value={open.length} />
         </Link>
         <Link href="/agent?filter=inprogress">
-          <KpiCard icon={<TrendingUp className="text-blue-600"/>} label="In progress" value={inProgress.length} />
+          <KpiCard icon={<TrendingUp className="text-blue-600"/>} label="In Progress" value={inProgress.length} />
         </Link>
         <Link href="/agent?filter=resolved">
           <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>} label="Resolved" value={resolved.length} />
@@ -88,14 +121,18 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
         <div className="divide-y divide-slate-100">
           {list.map(t => {
             const isPending = t.status !== 'Resolved' && t.status !== 'Closed';
+            const awaitingReply = needsResponse(t);
             return (
-              <div key={t.id} className="px-6 py-4 hover:bg-slate-50">
+              <div key={t.id} className={`px-6 py-4 hover:bg-slate-50 ${awaitingReply ? 'border-l-4 border-l-rose-500' : ''}`}>
                 <div className="flex items-start justify-between gap-4">
                   <Link href={`/agent/tickets/${t.id}`} className="flex-1 min-w-0 block">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor(t.status)}`}>{t.status}</span>
+                      {awaitingReply && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 font-medium">💬 Awaiting Response</span>
+                      )}
                       {isPending && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${pendingColor(t.created_at)}`}>
                           ⏱ {pendingDays(t.created_at)}
