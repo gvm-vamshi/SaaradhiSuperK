@@ -39,13 +39,13 @@ export default async function AdminDashboard() {
   const stats = storeStats;
 
   // Fetch last message per ticket for "awaiting response"
-  const ticketIds = all.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').map(t => t.id);
+  const pendingIds = all.filter(t => t.status !== 'Resolved' && t.status !== 'Closed').map(t => t.id);
   let lastMessages: Record<number, TicketMessage> = {};
-  if (ticketIds.length > 0) {
+  if (pendingIds.length > 0) {
     const { data: msgs } = await supabase
       .from('ticket_messages')
       .select('*')
-      .in('ticket_id', ticketIds)
+      .in('ticket_id', pendingIds)
       .order('created_at', { ascending: false }) as unknown as { data: TicketMessage[] };
 
     for (const m of (msgs || [])) {
@@ -62,14 +62,28 @@ export default async function AdminDashboard() {
     return last.sender_role === 'sp';
   };
 
+  const now = Date.now();
+  const hrs48 = 48 * 60 * 60 * 1000;
+  const days7 = 7 * 24 * 60 * 60 * 1000;
+
   const totalTickets = all.length;
-  const open         = all.filter(t => t.status === 'Open').length;
-  const inProg       = all.filter(t => t.status === 'In Progress').length;
-  const resolved     = all.filter(t => t.status === 'Resolved').length;
+  const open = all.filter(t => t.status === 'Open').length;
+  const inProg = all.filter(t => t.status === 'In Progress').length;
+  const resolved = all.filter(t => t.status === 'Resolved').length;
   const storesWithPending = stats.filter(x => Number(x.pending_count) > 0).length;
   const awaitingCount = all.filter(t => needsResponse(t)).length;
 
+  // SLA calculations
   const pendingTickets = all.filter(t => t.status !== 'Resolved' && t.status !== 'Closed');
+
+  const sla1Breaches = pendingTickets.filter(t =>
+    !t.first_response_at && (now - new Date(t.created_at).getTime()) > hrs48
+  );
+
+  const sla2Breaches = pendingTickets.filter(t =>
+    (now - new Date(t.created_at).getTime()) > days7
+  );
+
   const agingMap: Record<string, Ticket[]> = { '< 24 hrs': [], '1-3 days': [], '3-7 days': [], '> 7 days': [] };
   for (const t of pendingTickets) agingMap[agingBucket(t.created_at)].push(t);
 
@@ -82,29 +96,91 @@ export default async function AdminDashboard() {
 
   const topByPending = [...stats].sort((a, b) => Number(b.pending_count) - Number(a.pending_count)).slice(0, 5);
 
+  const ticketAge = (t: Ticket) => {
+    const diff = now - new Date(t.created_at).getTime();
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    return days > 0 ? `${days}d` : `${hours}h`;
+  };
+
   return (
     <Shell title="Admin Dashboard" icon={<Shield size={20}/>} accent="slate">
       <AdminTabs/>
       <div className="space-y-6">
         <div className="grid md:grid-cols-6 gap-4">
-          <KpiCard icon={<MessageCircle className="text-rose-600"/>}   label="Awaiting Response"     value={awaitingCount} />
-          <KpiCard icon={<TicketIcon className="text-slate-700"/>}     label="Total tickets"          value={totalTickets} />
-          <KpiCard icon={<AlertTriangle className="text-blue-600"/>}    label="Open"                   value={open} />
-          <KpiCard icon={<Clock className="text-violet-600"/>}          label="In progress"            value={inProg} />
-          <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>}  label="Resolved"               value={resolved} />
-          <KpiCard icon={<Store className="text-orange-600"/>}          label="Stores with pending"    value={`${storesWithPending} / ${stats.length}`} />
+          <KpiCard icon={<MessageCircle className="text-rose-600"/>} label="Awaiting Response" value={awaitingCount} />
+          <KpiCard icon={<TicketIcon className="text-slate-700"/>} label="Total tickets" value={totalTickets} />
+          <KpiCard icon={<AlertTriangle className="text-blue-600"/>} label="Open" value={open} />
+          <KpiCard icon={<Clock className="text-violet-600"/>} label="In progress" value={inProg} />
+          <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>} label="Resolved" value={resolved} />
+          <KpiCard icon={<Store className="text-orange-600"/>} label="Stores with pending" value={`${storesWithPending} / ${stats.length}`} />
         </div>
 
-        {/* Awaiting response list */}
+        {/* SLA Breaches */}
+        {(sla1Breaches.length > 0 || sla2Breaches.length > 0) && (
+          <div className="bg-rose-50 rounded-xl border-2 border-rose-300 p-6">
+            <div className="font-bold text-rose-900 text-lg mb-4">🚨 SLA Breaches</div>
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div className={`p-4 rounded-lg border-2 ${sla1Breaches.length > 0 ? 'border-rose-400 bg-white' : 'border-emerald-300 bg-emerald-50'}`}>
+                <div className="text-xs font-semibold uppercase text-slate-500">SLA 1: First Response within 48 hrs</div>
+                <div className={`text-3xl font-bold mt-1 ${sla1Breaches.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {sla1Breaches.length > 0 ? `${sla1Breaches.length} breached` : '✓ On track'}
+                </div>
+              </div>
+              <div className={`p-4 rounded-lg border-2 ${sla2Breaches.length > 0 ? 'border-rose-400 bg-white' : 'border-emerald-300 bg-emerald-50'}`}>
+                <div className="text-xs font-semibold uppercase text-slate-500">SLA 2: Resolution within 7 days</div>
+                <div className={`text-3xl font-bold mt-1 ${sla2Breaches.length > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>
+                  {sla2Breaches.length > 0 ? `${sla2Breaches.length} breached` : '✓ On track'}
+                </div>
+              </div>
+            </div>
+
+            {sla1Breaches.length > 0 && (
+              <div className="mb-4">
+                <div className="text-sm font-semibold text-rose-800 mb-2">⏱ No first response in 48+ hrs</div>
+                <div className="space-y-1">
+                  {sla1Breaches.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(t => (
+                    <Link key={t.id} href={`/admin/tickets/${t.id}`} className="flex items-center justify-between py-1.5 px-3 rounded hover:bg-rose-100 text-sm">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
+                        <span className="text-slate-900 font-medium truncate">{t.stores?.name}</span>
+                        <span className="text-xs text-slate-500">{t.category} → {t.sub_category}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-rose-700 flex-shrink-0">⏱ {ticketAge(t)}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {sla2Breaches.length > 0 && (
+              <div>
+                <div className="text-sm font-semibold text-rose-800 mb-2">📅 Not resolved in 7+ days</div>
+                <div className="space-y-1">
+                  {sla2Breaches.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()).map(t => (
+                    <Link key={t.id} href={`/admin/tickets/${t.id}`} className="flex items-center justify-between py-1.5 px-3 rounded hover:bg-rose-100 text-sm">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                        <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
+                        <span className="text-slate-900 font-medium truncate">{t.stores?.name}</span>
+                        <span className="text-xs text-slate-500">{t.category} → {t.sub_category}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-rose-700 flex-shrink-0">⏱ {ticketAge(t)}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Awaiting response */}
         {awaitingCount > 0 && (
           <div className="bg-rose-50 rounded-xl border border-rose-200 p-6">
             <div className="font-semibold text-rose-900 mb-4">💬 Tickets awaiting response ({awaitingCount})</div>
             <div className="space-y-2">
               {all.filter(t => needsResponse(t)).slice(0, 10).map(t => {
-                const diff = Date.now() - new Date(t.created_at).getTime();
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor(diff / (1000 * 60 * 60));
-                const age = days > 0 ? `${days}d` : `${hours}h`;
                 const lastMsg = lastMessages[t.id];
                 const lastMsgPreview = lastMsg ? lastMsg.body.slice(0, 80) + (lastMsg.body.length > 80 ? '...' : '') : 'No messages yet';
                 return (
@@ -114,7 +190,7 @@ export default async function AdminDashboard() {
                         <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
                         <span className="text-xs text-slate-500">· {t.stores?.name}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${agingColors[agingBucket(t.created_at)]}`}>⏱ {age}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${agingColors[agingBucket(t.created_at)]}`}>⏱ {ticketAge(t)}</span>
                       </div>
                       <div className="text-sm font-medium text-slate-900 mt-0.5">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</div>
                       {lastMsg?.sender_role === 'sp' && (
@@ -148,23 +224,17 @@ export default async function AdminDashboard() {
               {[...pendingTickets]
                 .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
                 .slice(0, 5)
-                .map(t => {
-                  const diff = Date.now() - new Date(t.created_at).getTime();
-                  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                  const hours = Math.floor(diff / (1000 * 60 * 60));
-                  const age = days > 0 ? `${days}d ago` : `${hours}h ago`;
-                  return (
-                    <Link key={t.id} href={`/admin/tickets/${t.id}`} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
-                        <span className="text-sm font-medium text-slate-900 truncate">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</span>
-                        <span className="text-xs text-slate-500 hidden md:inline">· {t.stores?.name}</span>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${agingColors[agingBucket(t.created_at)]}`}>⏱ {age}</span>
-                    </Link>
-                  );
-                })}
+                .map(t => (
+                  <Link key={t.id} href={`/admin/tickets/${t.id}`} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="font-mono text-xs text-slate-500">{t.ticket_code}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${priorityColor(t.priority)}`}>{t.priority}</span>
+                      <span className="text-sm font-medium text-slate-900 truncate">{t.category} · {t.other_title ? `Other: ${t.other_title}` : t.sub_category}</span>
+                      <span className="text-xs text-slate-500 hidden md:inline">· {t.stores?.name}</span>
+                    </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${agingColors[agingBucket(t.created_at)]}`}>⏱ {ticketAge(t)}</span>
+                  </Link>
+                ))}
             </div>
           )}
           {pendingTickets.length === 0 && (
