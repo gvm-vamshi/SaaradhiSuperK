@@ -37,10 +37,17 @@ Description: ${ticket.description}${history}
 
 Generate a short contextual reply (2-3 lines) for the store partner.`;
 
-  try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
+  // Try multiple endpoints in order (Google keeps changing these)
+  const endpoints = [
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -48,19 +55,28 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
         }),
+      });
+
+      if (response.status === 404) {
+        console.log(`Gemini 404 on: ${url.split('?')[0]}`);
+        continue; // try next endpoint
       }
-    );
 
-    if (!response.ok) {
-      console.error('Gemini API error:', response.status);
-      return 'Thank you for raising this. We are looking into it and will update you shortly.';
+      if (!response.ok) {
+        console.error(`Gemini error ${response.status} on: ${url.split('?')[0]}`);
+        continue;
+      }
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (text) return text;
+    } catch (err) {
+      console.error(`Gemini call failed on: ${url.split('?')[0]}`, err);
+      continue;
     }
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    return text || 'Thank you for raising this. We are looking into it and will update you shortly.';
-  } catch (err) {
-    console.error('Gemini call failed:', err);
-    return 'Thank you for raising this. We are looking into it and will update you shortly.';
   }
+
+  // All endpoints failed
+  console.error('All Gemini endpoints failed');
+  return 'Thank you for raising this. We are looking into it and will update you shortly.';
 }
