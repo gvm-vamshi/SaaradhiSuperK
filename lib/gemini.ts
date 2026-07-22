@@ -1,6 +1,6 @@
 const MANUAL = `You are the SuperK Mitra support chatbot for franchise grocery store partners in Andhra Pradesh, India.
 
-RULES:
+RULES: 
 - Keep responses to 2-3 lines maximum
 - Match the SP's language (Telugu/English/mix)
 - NEVER share product-wise margins
@@ -79,7 +79,7 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
       }
     }
   }
-
+console,log();
   console.error('All Gemini endpoints failed');
   return 'Thank you for raising this. We are looking into it and will update you shortly.';
 }
