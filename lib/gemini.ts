@@ -44,66 +44,45 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
     generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
   });
 
-  const attempts: { url: string; headers: Record<string, string>; label: string }[] = [
-    {
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      label: 'bearer-v1beta-flash',
-    },
-    {
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      label: 'header-v1beta-flash',
-    },
-    {
-      url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      headers: { 'Content-Type': 'application/json' },
-      label: 'query-v1beta-flash',
-    },
-    {
-      url: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      label: 'bearer-v1-flash',
-    },
-    {
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      label: 'bearer-v1beta-lite',
-    },
-    {
-      url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      label: 'header-v1beta-lite',
-    },
+  // Current models available for new users (as of July 2026)
+  const models = [
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-3.6-flash',
   ];
 
-  for (const m of attempts) {
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
     try {
-      const response = await fetch(m.url, {
+      const response = await fetch(url, {
         method: 'POST',
-        headers: m.headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
         body,
       });
 
       if (!response.ok) {
         const errBody = await response.text();
-        console.error(`Gemini ${response.status} [${m.label}]: ${errBody.slice(0, 150)}`);
+        console.error(`Gemini ${response.status} [${model}]: ${errBody.slice(0, 150)}`);
         continue;
       }
 
       const data = await response.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
       if (text) {
-        console.log(`Gemini SUCCESS [${m.label}]`);
+        console.log(`Gemini SUCCESS [${model}]`);
         return text;
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error(`Gemini fetch failed [${m.label}]: ${msg}`);
+      console.error(`Gemini fetch failed [${model}]: ${msg}`);
       continue;
     }
   }
 
-  console.error('All Gemini methods failed');
+  console.error('All Gemini models failed');
   return 'Thank you for raising this. We are looking into it and will update you shortly.';
 }
