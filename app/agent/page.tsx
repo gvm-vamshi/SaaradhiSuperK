@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
 import { Headphones, Ticket as TicketIcon, Clock, TrendingUp, CheckCircle2, Phone, MessageCircle } from 'lucide-react';
 import { priorityColor, statusColor, type Ticket, type Profile, type TicketMessage } from '@/lib/types';
+import { AgentFilters } from './AgentFilters';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,8 @@ function pendingColor(createdAt: string): string {
   return 'bg-blue-100 text-blue-700';
 }
 
-export default async function AgentHome({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
-  const { filter = 'mine' } = await searchParams;
+export default async function AgentHome({ searchParams }: { searchParams: Promise<{ filter?: string; store?: string; priority?: string; category?: string; search?: string }> }) {
+  const { filter = 'mine', store = '', priority = '', category = '', search = '' } = await searchParams;
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -38,7 +39,7 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
 
   const all = queue || [];
 
-  // Fetch last message per ticket to determine "awaiting response"
+  // Fetch last message per ticket for "awaiting response"
   const ticketIds = all.map(t => t.id);
   let lastMessages: Record<number, TicketMessage> = {};
   if (ticketIds.length > 0) {
@@ -47,20 +48,15 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
       .select('*')
       .in('ticket_id', ticketIds)
       .order('created_at', { ascending: false }) as unknown as { data: TicketMessage[] };
-
-    // Get the latest message per ticket
     for (const m of (msgs || [])) {
-      if (!lastMessages[m.ticket_id]) {
-        lastMessages[m.ticket_id] = m;
-      }
+      if (!lastMessages[m.ticket_id]) lastMessages[m.ticket_id] = m;
     }
   }
 
-  // A ticket needs response if: not resolved AND (last message is from SP OR no messages at all)
   const needsResponse = (t: Ticket) => {
     if (t.status === 'Resolved' || t.status === 'Closed') return false;
     const last = lastMessages[t.id];
-    if (!last) return true; // no messages = needs first response
+    if (!last) return true;
     return last.sender_role === 'sp';
   };
 
@@ -70,12 +66,34 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
   const resolved = all.filter(t => t.status === 'Resolved');
   const awaiting = all.filter(t => needsResponse(t));
 
+  // Tab filter
   let list = all;
   if (filter === 'mine')        list = mine;
   if (filter === 'open')        list = open;
   if (filter === 'inprogress')  list = inProgress;
   if (filter === 'resolved')    list = resolved;
   if (filter === 'awaiting')    list = awaiting;
+
+  // Dropdown filters
+  if (store)    list = list.filter(t => (t.stores?.name || t.store_code) === store);
+  if (priority) list = list.filter(t => t.priority === priority);
+  if (category) list = list.filter(t => t.category === category);
+  if (search) {
+    const q = search.toLowerCase();
+    list = list.filter(t =>
+      t.ticket_code.toLowerCase().includes(q) ||
+      (t.stores?.name || '').toLowerCase().includes(q) ||
+      t.store_code.toLowerCase().includes(q) ||
+      t.description.toLowerCase().includes(q) ||
+      t.category.toLowerCase().includes(q) ||
+      t.sub_category.toLowerCase().includes(q) ||
+      (t.other_title || '').toLowerCase().includes(q)
+    );
+  }
+
+  // Extract unique values for filter dropdowns
+  const storeNames = [...new Set(all.map(t => t.stores?.name || t.store_code))].sort();
+  const categories = [...new Set(all.map(t => t.category))].sort();
 
   const filters = [
     ['awaiting',   '⚠ Awaiting',  awaiting.length],
@@ -87,36 +105,47 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
   ];
 
   return (
-    <Shell title="Agent Console" subtitle={`${profile.full_name} · ${profile.team ?? ''}`} icon={<Headphones size={20}/>} accent="violet">
+    <Shell title="Agent Console" subtitle={`${profile.full_name} · ${profile.team ?? ''}`} icon={<Headphones size={20} />} accent="violet">
       <div className="grid md:grid-cols-5 gap-4 mb-6">
         <Link href="/agent?filter=awaiting">
-          <KpiCard icon={<MessageCircle className="text-rose-600"/>} label="Awaiting Response" value={awaiting.length} />
+          <KpiCard icon={<MessageCircle className="text-rose-600" />} label="Awaiting Response" value={awaiting.length} />
         </Link>
         <Link href="/agent?filter=mine">
-          <KpiCard icon={<TicketIcon className="text-violet-600"/>} label="Assigned to me" value={mine.length} />
+          <KpiCard icon={<TicketIcon className="text-violet-600" />} label="Assigned to me" value={mine.length} />
         </Link>
         <Link href="/agent?filter=open">
-          <KpiCard icon={<Clock className="text-orange-600"/>} label="Open" value={open.length} />
+          <KpiCard icon={<Clock className="text-orange-600" />} label="Open" value={open.length} />
         </Link>
         <Link href="/agent?filter=inprogress">
-          <KpiCard icon={<TrendingUp className="text-blue-600"/>} label="In Progress" value={inProgress.length} />
+          <KpiCard icon={<TrendingUp className="text-blue-600" />} label="In Progress" value={inProgress.length} />
         </Link>
         <Link href="/agent?filter=resolved">
-          <KpiCard icon={<CheckCircle2 className="text-emerald-600"/>} label="Resolved" value={resolved.length} />
+          <KpiCard icon={<CheckCircle2 className="text-emerald-600" />} label="Resolved" value={resolved.length} />
         </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
-          <div className="font-semibold">Tickets — {profile.team}</div>
-          <div className="flex gap-1 bg-slate-100 p-1 rounded-lg flex-wrap">
-            {filters.map(([k, l, count]) => (
-              <Link key={k as string} href={`/agent?filter=${k}`}
-                className={`text-sm px-3 py-1 rounded-md ${filter === k ? 'bg-white shadow text-violet-700 font-medium' : 'text-slate-600'}`}>
-                {l as string} ({count as number})
-              </Link>
-            ))}
+        <div className="px-6 py-4 border-b border-slate-100 space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="font-semibold">Tickets — {profile.team}</div>
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-lg flex-wrap">
+              {filters.map(([k, l, count]) => (
+                <Link key={k as string} href={`/agent?filter=${k}${store ? `&store=${encodeURIComponent(store)}` : ''}${priority ? `&priority=${priority}` : ''}${category ? `&category=${encodeURIComponent(category)}` : ''}${search ? `&search=${encodeURIComponent(search)}` : ''}`}
+                  className={`text-sm px-3 py-1 rounded-md ${filter === k ? 'bg-white shadow text-violet-700 font-medium' : 'text-slate-600'}`}>
+                  {l as string} ({count as number})
+                </Link>
+              ))}
+            </div>
           </div>
+          <AgentFilters
+            storeNames={storeNames}
+            categories={categories}
+            currentStore={store}
+            currentPriority={priority}
+            currentCategory={category}
+            currentFilter={filter}
+            currentSearch={search}
+          />
         </div>
         <div className="divide-y divide-slate-100">
           {list.map(t => {
@@ -147,14 +176,14 @@ export default async function AgentHome({ searchParams }: { searchParams: Promis
                     <a href={`tel:${t.stores.phone}`}
                       className="flex-shrink-0 flex items-center gap-1.5 bg-red-50 text-red-700 hover:bg-red-100 text-xs font-medium px-3 py-1.5 rounded-lg"
                       title={`Call ${t.stores.name}`}>
-                      <Phone size={12}/> {t.stores.phone}
+                      <Phone size={12} /> {t.stores.phone}
                     </a>
                   )}
                 </div>
               </div>
             );
           })}
-          {list.length === 0 && <div className="p-8 text-center text-slate-500">No tickets in this view.</div>}
+          {list.length === 0 && <div className="p-8 text-center text-slate-500">No tickets match filters.</div>}
         </div>
       </div>
     </Shell>

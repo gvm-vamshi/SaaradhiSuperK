@@ -2,6 +2,8 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { generateBotReply } from '@/lib/gemini';
+import { getSpocRouting } from '@/lib/spoc-routing';
 import type { TicketStatus } from '@/lib/types';
 
 export async function createTicket(input: {
@@ -25,7 +27,7 @@ export async function createTicket(input: {
     .eq('sub_category', input.sub_category)
     .maybeSingle();
 
-  // Round-robin across routing-active agents only
+  // Round-robin across routing-active agents
   const { data: agents } = await supabase
     .from('profiles')
     .select('id, full_name')
@@ -55,11 +57,62 @@ export async function createTicket(input: {
       status: 'Open',
       assigned_to: assignedTo,
     })
-    .select('id')
+    .select('id, ticket_code')
     .single();
 
   if (error) return { error: error.message };
+
+  // Fire-and-forget: bot reply + Slack SPOC alert
+  // We don't await this so the SP isn't blocked
+  botReplyAndAlert(supabase, created.id, created.ticket_code, profile.store_code, input).catch(console.error);
+
   redirect(`/sp/tickets/${created.id}`);
+}
+
+async function botReplyAndAlert(
+  supabase: any,
+  ticketId: number,
+  ticketCode: string,
+  storeCode: string,
+  input: { category: string; sub_category: string; other_title: string | null; description: string }
+) {
+  // Get store info
+  const { data: store } = await supabase
+    .from('stores').select('name, phone').eq('code', storeCode).single();
+
+  // Generate Gemini reply
+  const botReply = await generateBotReply({
+    category: input.category,
+    sub_category: input.sub_category,
+    other_title: input.other_title,
+    description: input.description,
+    store_name: store?.name || storeCode,
+  });
+
+  // Insert bot reply as agent message
+  if (botReply) {
+    await supabase.from('ticket_messages').insert({
+      ticket_id: ticketId,
+      sender_id: '00000000-0000-0000-0000-000000000000', // system/bot user
+      sender_role: 'agent',
+      body: botReply,
+    });
+
+    // Set first_response_at
+    await supabase.from('tickets').update({
+      first_response_at: new Date().toISOString(),
+      status: 'In Progress',
+    }).eq('id', ticketId);
+  }
+
+  // Get SPOC routing (this reads from DB so admin changes take effect immediately)
+  const routing = await getSpocRouting(input.category, input.sub_category);
+
+  // The Slack alert with SPOC tags is handled by pg_net trigger
+  // But we need to store the routing info for the enhanced trigger
+  // We'll use a ticket metadata approach — store routing in a comment
+  // Actually, the pg_net trigger already fires on INSERT, so we enhance it
+  // to query spoc_assignments directly. See Step 4 SQL below.
 }
 
 export async function postMessage(ticketId: number, body: string) {
@@ -73,7 +126,6 @@ export async function postMessage(ticketId: number, body: string) {
     .from('profiles').select('role').eq('id', user.id).single();
   if (!profile) return { error: 'Profile not found.' };
 
-  // Admin and ASM messages appear as agent to SP
   const senderRole = (profile.role === 'admin' || profile.role === 'asm') ? 'agent' : profile.role;
 
   const { error } = await supabase.from('ticket_messages').insert({

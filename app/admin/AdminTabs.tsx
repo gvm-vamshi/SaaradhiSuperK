@@ -2,19 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Store, Ticket, Users, Settings } from 'lucide-react';
+import { BarChart3, Store, Ticket, Users, Settings, UserCog } from 'lucide-react';
 
 const TABS = [
-  { href: '/admin',          label: 'Dashboard',   icon: <BarChart3 size={14}/> },
-  { href: '/admin/stores',   label: 'Stores',      icon: <Store size={14}/> },
-  { href: '/admin/tickets',  label: 'All Tickets', icon: <Ticket size={14}/> },
-  { href: '/admin/users',    label: 'Users',       icon: <Users size={14}/> },
-  { href: '/admin/routing',  label: 'Routing',     icon: <Settings size={14}/> },
+  { href: '/admin',          label: 'Dashboard',   icon: <BarChart3 size={14} /> },
+  { href: '/admin/stores',   label: 'Stores',      icon: <Store size={14} /> },
+  { href: '/admin/tickets',  label: 'All Tickets', icon: <Ticket size={14} /> },
+  { href: '/admin/users',    label: 'Users',       icon: <Users size={14} /> },
+  { href: '/admin/routing',  label: 'Routing',     icon: <Settings size={14} /> },
+  { href: '/admin/spocs',    label: 'SPOCs',       icon: <UserCog size={14} /> },
 ];
 
 export function AdminTabs() {
   const pathname = usePathname();
-
   return (
     <div className="flex gap-1 bg-slate-100 p-1 rounded-lg w-fit mb-6 flex-wrap">
       {TABS.map(t => {
