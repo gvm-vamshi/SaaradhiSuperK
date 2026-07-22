@@ -37,46 +37,49 @@ Description: ${ticket.description}${history}
 
 Generate a short contextual reply (2-3 lines) for the store partner.`;
 
-  // Try multiple endpoints in order (Google keeps changing these)
-  const endpoints = [
-    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-    `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`,
+  const models = [
+    'gemini-2.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
   ];
 
-  for (const url of endpoints) {
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: MANUAL }] },
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
-        }),
-      });
+  const versions = ['v1beta', 'v1'];
 
-      if (response.status === 404) {
-        console.log(`Gemini 404 on: ${url.split('?')[0]}`);
-        continue; // try next endpoint
-      }
+  for (const model of models) {
+    for (const ver of versions) {
+      const url = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${apiKey}`;
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: MANUAL }] },
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
+          }),
+        });
 
-      if (!response.ok) {
-        console.error(`Gemini error ${response.status} on: ${url.split('?')[0]}`);
+        if (!response.ok) {
+          const errBody = await response.text();
+          console.error(`Gemini ${response.status} on ${ver}/${model}: ${errBody.slice(0, 200)}`);
+          continue;
+        }
+
+        const data = await response.json();
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+        if (text) {
+          console.log(`Gemini SUCCESS on ${ver}/${model}`);
+          return text;
+        }
+      } catch (err) {
+        console.error(`Gemini fetch failed on ${ver}/${model}:`, err);
         continue;
       }
-
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-      if (text) return text;
-    } catch (err) {
-      console.error(`Gemini call failed on: ${url.split('?')[0]}`, err);
-      continue;
     }
   }
 
-  // All endpoints failed
   console.error('All Gemini endpoints failed');
   return 'Thank you for raising this. We are looking into it and will update you shortly.';
 }
