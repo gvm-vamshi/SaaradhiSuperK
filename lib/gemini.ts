@@ -23,7 +23,7 @@ export async function generateBotReply(ticket: {
   store_name: string;
   conversation_history?: string;
 }): Promise<string> {
-    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     console.error('GEMINI_API_KEY not set');
     return 'Thank you for raising this. We are looking into it and will update you shortly.';
@@ -44,39 +44,32 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
     generationConfig: { maxOutputTokens: 200, temperature: 0.3 },
   });
 
-  // Try all auth methods for AQ. keys
-  const methods = [
-    // Method 1: Bearer token auth
+  const attempts: { url: string; headers: Record<string, string>; label: string }[] = [
     {
       url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       label: 'bearer-v1beta-flash',
     },
-    // Method 2: x-goog-api-key header
     {
       url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       label: 'header-v1beta-flash',
     },
-    // Method 3: Query param
     {
       url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
       headers: { 'Content-Type': 'application/json' },
       label: 'query-v1beta-flash',
     },
-    // Method 4: v1 + Bearer
     {
       url: 'https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       label: 'bearer-v1-flash',
     },
-    // Method 5: flash-lite Bearer
     {
       url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       label: 'bearer-v1beta-lite',
     },
-    // Method 6: flash-lite x-goog-api-key
     {
       url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
@@ -84,7 +77,7 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
     },
   ];
 
-  for (const m of methods) {
+  for (const m of attempts) {
     try {
       const response = await fetch(m.url, {
         method: 'POST',
@@ -104,8 +97,9 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
         console.log(`Gemini SUCCESS [${m.label}]`);
         return text;
       }
-    } catch (err: any) {
-      console.error(`Gemini fetch failed [${m.label}]:`, err?.message);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Gemini fetch failed [${m.label}]: ${msg}`);
       continue;
     }
   }
