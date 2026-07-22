@@ -79,7 +79,6 @@ Generate a short contextual reply (2-3 lines) for the store partner.`;
       }
     }
   }
-console,log();
   console.error('All Gemini endpoints failed');
   return 'Thank you for raising this. We are looking into it and will update you shortly.';
 }
