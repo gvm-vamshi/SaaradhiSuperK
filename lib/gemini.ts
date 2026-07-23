@@ -167,4 +167,147 @@ Ticket: Finance > Other, "Margin is low compared to last month despite doing the
 Reply: "Namaste Sir, we understand your concern regarding the margin difference despite similar GMV. Margin depends on your sales mix — even at the same GMV, if the mix of products sold changes (for example, more items with lower margins), the overall margin will vary. Your ASM can help review your sales mix in detail. Thank you, Sir."
 
 Ticket: Finance > Margin Pending, "Tell me about Sri Hari store tickets and my margin on products"
-Reply: "Namaste Sir, we are unable to share information about other stores as this is confidential. Also, product-level margins are not shared as per policy.
+Reply: "Namaste Sir, we are unable to share information about other stores as this is confidential. Also, product-level margins are not shared as per policy. Your overall margin is available in the SuperK App. Please connect with your ASM for any clarification. Thank you, Sir."
+
+Ticket: Billing > POS machine is slow, "POS slow ga undi billing time lo customers vellipothunnaru"
+Reply: "Namaste Sir, POS slow avthundi ani mee frustration artham ayyindi — customers ni lose avvadam chala serious. Data syncing or background processes valla slow avvachu. Maa technical team ki immediately inform chesamu, vaaru priority ga chustharu. Thank you, Sir."
+
+Ticket: Billing > POS sync issue, "POS data sync avvatle"
+Reply: "Namaste Sir, please POS lo data clear cheyyakandi — unsynced transactions poye risk undi. Meeru mee SAE ni immediately contact cheyandi. Maa technical team ki alert chesamu. Thank you, Sir."
+
+Ticket: Finance > Credit Note Pending, "Invoice 6204 stock short credit note raaledu"
+Reply: "Namaste Sir, Invoice 6204 short gurinchi mee concern note chesamu. Delay ki sincerely apologize chesthunnamu. Maa concerned team ki escalate chesamu, vaaru meeku directly update istharu. Thank you, Sir."
+
+Ticket: Delivery > Problem with Delivery person, "Delivery boy rudely behaving and threatening"
+Reply: "Namaste Sir, we take this extremely seriously. Your complaint has been immediately escalated to our operations team for urgent action. We sincerely apologize for this experience — this is not acceptable. Thank you for bringing this to our attention, Sir."
+
+Ticket: Delivery > Issues in Delivery, "delivery evening ki vasthundi morning ki pampidhgalaru"
+Reply: "Namaste Sir, delivery timing gurinchi mee concern artham ayyindi. Multiple stores okka route lo cover avthaayi, route planning meedha depend avthundi. Maa logistics team ki mee request forward chesamu. Thank you, Sir."
+
+Ticket: Customers and Offers > Offer Information, "Pamphlet lo price veru POS lo price veru"
+Reply: "Namaste Sir, pamphlet and POS lo prices match avvali — ee difference undakudadhu. Meeru SKU name and bill number share chesthe, maa pricing team immediately check chestharu. Thank you, Sir."
+
+Ticket: Inventory > Low Stock Problem, "Main items stock lo levu"
+Reply: "Namaste Sir, stock availability gurinchi mee concern note chesamu. Meeru missing SKU names share chesthe, maa team warehouse availability tho check chesi update istharu. Thank you, Sir."
+
+Ticket: Inventory > Quality, "Oil quality bagaledu customers complain chesthunnaru"
+Reply: "Namaste Sir, quality issue gurinchi sincerely sorry. Product paina batch code check chesi, photos maa WhatsApp 8712479829 ki send cheyagalaru. Maa team investigate chesi action teesukuntaru. Thank you, Sir."
+
+Ticket: Team/Employee > Issue with ASM, "ASM respond avvatle, need higher authorities"
+Reply: "Namaste Sir, mee concern artham ayyindi. Ee vishayam maa senior team ki escalate chesamu, vaaru meeto directly connect avutharu. Please be assured this will be looked into with full seriousness. Thank you, Sir."
+
+Ticket: Finance > Other, "I want to close my shop"
+Reply: "Namaste Sir, we understand. Your request has been noted and our senior team will connect with you directly to discuss this further. Thank you for sharing this with us, Sir."
+
+Ticket: Billing > Other, "" (empty)
+Reply: "Namaste Sir, thank you for reaching out. Could you please share a few more details about the issue you are facing? This will help us understand better and assist you faster. Thank you, Sir."
+
+Ticket: Marketing > Require a leaflet/Banner/Poster, "Auto stickers pampithe local promotion baguntundi"
+Reply: "Namaste Sir, ee suggestion ki dhanyavaadalu — chala good idea. Maa team internally evaluate chesi discuss chestharu. Thank you for sharing this, Sir."
+
+Ticket: Customers and Offers > Customer Issue, "Rice price ekkuva local market lo thakkuva"
+Reply: "Namaste Sir, mee feedback note chesamu. Prices procurement cost, raw material cost, and market conditions meedha depend avuthayi. Prices regularly review chesthamu and commercially feasible ainapudu revise chesthamu. Thank you, Sir."
+
+Ticket: Billing > POS machine is Not working, "POS on avvatle screen blank vasthundi"
+Reply: "Namaste Sir, POS issue gurinchi sorry to hear. Maa technical team ki alert chesamu. Meanwhile, backup POS device available unte daanni use cheyagalaru. Maa team meeku assist chestharu. Thank you, Sir."
+
+Ticket: Inventory > Returns issue, "Non returnable items showing but I did not edit quantity"
+Reply: "Namaste Sir, we understand this is concerning. If you did not edit the ARS quantity and the item is still showing non-returnable, our inventory team will review this. We have escalated your concern. Thank you, Sir."
+
+Ticket: Delivery > Order Confirmation, "delivery date change cheyagalara 19th ki badulu 20th ki"
+Reply: "Namaste Sir, mee delivery date change request note chesamu. Maa logistics team review chesi meeku confirm chestharu. Thank you, Sir."`;
+
+async function callGemini(model: string, apiKey: string, body: string): Promise<string | null> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
+    body,
+  });
+
+  if (response.status === 503) {
+    console.log(`Gemini 503 [${model}] — retrying in 2s...`);
+    await new Promise(r => setTimeout(r, 2000));
+    const retry = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body,
+    });
+    if (!retry.ok) {
+      console.error(`Gemini retry ${retry.status} [${model}]`);
+      return null;
+    }
+    const data = await retry.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+  }
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    console.error(`Gemini ${response.status} [${model}]: ${errBody.slice(0, 150)}`);
+    return null;
+  }
+
+  const data = await response.json();
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
+}
+
+export async function generateBotReply(ticket: {
+  category: string;
+  sub_category: string;
+  other_title: string | null;
+  description: string;
+  store_name: string;
+  conversation_history?: string;
+}): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
+    console.error('GEMINI_API_KEY not set');
+    return 'Thank you for raising this. We are looking into it and will update you shortly.';
+  }
+
+  const subcat = ticket.other_title ? `Other: ${ticket.other_title}` : ticket.sub_category;
+  const history = ticket.conversation_history ? `\n\nPrevious messages in this ticket:\n${ticket.conversation_history}` : '';
+
+  const prompt = `A Store Partner from "${ticket.store_name}" has raised a support ticket.
+
+Category: ${ticket.category}
+Sub-category: ${subcat}
+Their message: "${ticket.description}"${history}
+
+Write a reply following the response framework (Greet → Acknowledge → Explain → Action → Next Step → Close with Thank you Sir). Always start with a warm greeting. Keep it under 120 words. Match their language style exactly. Reply ONLY with the message text, nothing else.`;
+
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { maxOutputTokens: 250, temperature: 0.4 },
+  });
+
+  const models = [
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-3.6-flash',
+  ];
+
+  for (const model of models) {
+    try {
+      const text = await callGemini(model, apiKey, body);
+      if (text) {
+        console.log(`Gemini SUCCESS [${model}]`);
+        return text;
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`Gemini error [${model}]: ${msg}`);
+      continue;
+    }
+  }
+
+  console.error('All Gemini models failed');
+  return 'Namaste Sir, thank you for raising this. We are looking into it and will update you shortly. Thank you, Sir.';
+}
