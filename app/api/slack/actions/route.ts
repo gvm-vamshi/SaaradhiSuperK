@@ -75,11 +75,18 @@ export async function POST(req: Request) {
   const actorName = spoc?.person_name ?? 'SPOC';
 
   const { data: ticket, error: tErr } = await db
-    .from('tickets').select('id, ticket_code, first_response_at').eq('id', ticketId).single();
+    .from('tickets').select('id, ticket_code, first_response_at, status').eq('id', ticketId).single();
 
   if (tErr || !ticket) {
     console.error('SLACK: ticket lookup failed', tErr?.message);
     await db.rpc('post_slack_confirmation', { p_text: `⚠️ Ticket not found (id ${ticketId}).` });
+    return new Response('', { status: 200 });
+  }
+
+  if (ticket.status === 'Resolved') {
+    await db.rpc('post_slack_confirmation', {
+      p_text: `ℹ️ *${ticket.ticket_code}* is already resolved. This action was ignored.`,
+    });
     return new Response('', { status: 200 });
   }
 
