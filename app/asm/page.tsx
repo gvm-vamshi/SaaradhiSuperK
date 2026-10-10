@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
-import { Shield, Ticket as TicketIcon, Clock, CheckCircle2, Phone } from 'lucide-react';
+import { Shield, Ticket as TicketIcon, Clock, CheckCircle2, Phone, CalendarDays } from 'lucide-react';
 import { priorityColor, statusColor, type Ticket, type Profile } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
@@ -46,6 +46,21 @@ export default async function AsmHome() {
   return (
     <Shell title="Area Manager" subtitle={profile.full_name} icon={<Shield size={20}/>} accent="slate">
       <div className="space-y-6">
+        {/* Link to the daily performance messages for this ASM's stores */}
+        <Link
+          href="/asm/daily"
+          className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-5 py-4 hover:border-violet-300"
+        >
+          <div className="flex items-center gap-3">
+            <CalendarDays size={20} className="text-violet-600" />
+            <div>
+              <div className="font-semibold text-slate-900">Daily messages</div>
+              <div className="text-sm text-slate-500">Yesterday&apos;s performance message for each of your stores</div>
+            </div>
+          </div>
+          <span className="text-violet-600 text-sm">Open →</span>
+        </Link>
+
         <div className="grid md:grid-cols-4 gap-4">
           <KpiCard icon={<TicketIcon className="text-slate-700"/>} label="Total tickets" value={all.length} />
           <KpiCard icon={<Clock className="text-orange-600"/>} label="Open" value={open.length} />

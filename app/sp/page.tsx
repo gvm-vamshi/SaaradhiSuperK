@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
 import { User, Plus, Ticket as TicketIcon, MessageSquare, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
 import { statusColor, type Ticket, type Profile, type Store } from '@/lib/types';
+import { DailyCard } from './DailyCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,9 @@ export default async function SpHome() {
             <Link href="/sp/tickets" className="bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-5 py-3 rounded-lg hover:bg-white/25 flex items-center gap-2"><TicketIcon size={18}/> My tickets ({all.length})</Link>
           </div>
         </div>
+
+        {/* Daily performance card: renders only when admin has enabled it for this store */}
+        <DailyCard />
 
         <div className="grid md:grid-cols-3 gap-4">
           <KpiCard icon={<MessageSquare className="text-red-600"/>}   label="Total queries" value={all.length}/>

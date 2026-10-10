@@ -2,15 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Store, Ticket, Users, Settings, UserCog } from 'lucide-react';
+import { BarChart3, Store, Ticket, Users, Settings, UserCog, CalendarDays } from 'lucide-react';
 
 const TABS = [
-  { href: '/admin',          label: 'Dashboard',   icon: <BarChart3 size={14} /> },
-  { href: '/admin/stores',   label: 'Stores',      icon: <Store size={14} /> },
-  { href: '/admin/tickets',  label: 'All Tickets', icon: <Ticket size={14} /> },
-  { href: '/admin/users',    label: 'Users',       icon: <Users size={14} /> },
-  { href: '/admin/routing',  label: 'Routing',     icon: <Settings size={14} /> },
-  { href: '/admin/spocs',    label: 'SPOCs',       icon: <UserCog size={14} /> },
+  { href: '/admin',         label: 'Dashboard',      icon: <BarChart3 size={14} /> },
+  { href: '/admin/stores',  label: 'Stores',         icon: <Store size={14} /> },
+  { href: '/admin/tickets', label: 'All Tickets',    icon: <Ticket size={14} /> },
+  { href: '/admin/users',   label: 'Users',          icon: <Users size={14} /> },
+  { href: '/admin/routing', label: 'Routing',        icon: <Settings size={14} /> },
+  { href: '/admin/spocs',   label: 'SPOCs',          icon: <UserCog size={14} /> },
+  { href: '/admin/daily',   label: 'Daily Messages', icon: <CalendarDays size={14} /> },
 ];
 
 export function AdminTabs() {
@@ -20,8 +21,13 @@ export function AdminTabs() {
       {TABS.map(t => {
         const active = t.href === '/admin' ? pathname === '/admin' : pathname.startsWith(t.href);
         return (
-          <Link key={t.href} href={t.href}
-            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md ${active ? 'bg-white shadow font-medium text-slate-900' : 'text-slate-600'}`}>
+          <Link
+            key={t.href}
+            href={t.href}
+            className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md ${
+              active ? 'bg-white shadow font-medium text-slate-900' : 'text-slate-600'
+            }`}
+          >
             {t.icon} {t.label}
           </Link>
         );
