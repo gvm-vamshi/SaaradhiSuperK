@@ -75,7 +75,7 @@ export function DailyMessageView({ msg }: { msg: SpDailyMessage }) {
           <div style={{ background: 'rgba(255,255,255,0.14)', border: '0.5px solid rgba(255,255,255,0.25)', borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)' }}>ఈరోజు అంచనా</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>మీ {teluguWeekday(msg.report_date).replace('వారం','')}వారం సగటు sale</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)' }}>మీ ఈరోజు సగటు sale</div>
             </div>
             <div style={{ fontSize: 26, fontWeight: 600, color: '#fff' }}>{rupees(todayEst)}</div>
           </div>
