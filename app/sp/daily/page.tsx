@@ -11,7 +11,6 @@ export default async function SpDaily({ searchParams }: { searchParams: Promise<
   const { date } = await searchParams;
   const supabase = await createClient();
 
-  // RLS already limits this to: own store, feature enabled, not hidden, last 7 days
   const { data: msgs } = await supabase
     .from('sp_daily_messages')
     .select('*')
@@ -44,11 +43,8 @@ export default async function SpDaily({ searchParams }: { searchParams: Promise<
             <div className="font-semibold text-slate-900 mb-3">గత రోజులు</div>
             <div className="space-y-2">
               {others.map(m => (
-                <Link
-                  key={m.id}
-                  href={`/sp/daily?date=${m.report_date}`}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 border border-slate-100"
-                >
+                <Link key={m.id} href={`/sp/daily?date=${m.report_date}`}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50 border border-slate-100">
                   <span className="text-sm">
                     {dailyStatusEmoji(m.status)} {formatReportDate(m.report_date, false)} · {dailyStatusTelugu(m.status)}
                   </span>

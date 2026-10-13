@@ -5,7 +5,6 @@ import { dailyStatusEmoji, dailyStatusTelugu, rupees } from '@/lib/daily';
 export async function DailyCard() {
   const supabase = await createClient();
 
-  // RLS returns nothing when the feature is off for this store
   const { data } = await supabase
     .from('sp_daily_messages')
     .select('id, report_date, status, total_opportunity')

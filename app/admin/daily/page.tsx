@@ -57,6 +57,7 @@ export default async function AdminDaily({ searchParams }: { searchParams: Promi
   const byLever: Record<string, number> = {};
   let totalOpp = 0;
   let viewed = 0;
+  let acted = 0;
   for (const m of enabledMsgs) {
     if (byStatus[m.status] !== undefined) byStatus[m.status]++;
     totalOpp += Number(m.total_opportunity || 0);
@@ -64,8 +65,10 @@ export default async function AdminDaily({ searchParams }: { searchParams: Promi
       byLever[m.top_lever] = (byLever[m.top_lever] || 0) + Number(m.top_opportunity || 0);
     }
     if (m.first_viewed_at) viewed++;
+    if (m.acted_at) acted++;
   }
   const viewedPct = enabledMsgs.length ? Math.round((viewed / enabledMsgs.length) * 100) : 0;
+  const actedPct = enabledMsgs.length ? Math.round((acted / enabledMsgs.length) * 100) : 0;
 
   return (
     <Shell title="Admin Dashboard" icon={<CalendarDays size={20} />} accent="slate">
@@ -102,8 +105,9 @@ export default async function AdminDaily({ searchParams }: { searchParams: Promi
               <div className="text-xl font-bold">{rupees(totalOpp)}</div>
             </div>
             <div className="bg-slate-50 rounded-lg p-3">
-              <div className="text-xs text-slate-500">SPs who opened it</div>
+              <div className="text-xs text-slate-500">Opened / Acted</div>
               <div className="text-xl font-bold">{viewed}/{enabledMsgs.length} <span className="text-sm font-normal text-slate-500">({viewedPct}%)</span></div>
+              <div className="text-sm text-slate-600 mt-0.5">Acted: {acted} ({actedPct}%)</div>
             </div>
           </div>
 
