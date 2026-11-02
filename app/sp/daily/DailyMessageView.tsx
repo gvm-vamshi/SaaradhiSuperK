@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { OpportunityBand } from './OpportunityBand';
 // Adjust these two imports to match your project if the names/paths differ:
-import { markDailyViewed, markDailyActed } from './actions';
+import { markViewed, markActed } from './actions';
 import type { SpDailyMessage } from '@/lib/daily';
 
 /* ---------- helpers ---------- */
@@ -44,7 +44,7 @@ export function DailyMessageView({ message }: { message: SpDailyMessage }) {
   // mark as viewed once
   useEffect(() => {
     if (!message.first_viewed_at) {
-      markDailyViewed(message.id).catch(() => {});
+      markViewed(message.id).catch(() => {});
     }
   }, [message.id, message.first_viewed_at]);
 
@@ -127,7 +127,7 @@ export function DailyMessageView({ message }: { message: SpDailyMessage }) {
             disabled={acted || pending}
             onClick={() =>
               start(async () => {
-                try { await markDailyActed(message.id); setActed(true); } catch {}
+                try { await markActed(message.id); setActed(true); } catch {}
               })
             }
             className={`mt-3 px-4 py-2 rounded-lg text-sm font-semibold ${
