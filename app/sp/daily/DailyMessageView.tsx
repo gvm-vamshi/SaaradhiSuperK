@@ -27,7 +27,7 @@ const BAR = {
   none: '#CBD5E1',
 };
 
-export function DailyMessageView({ message }: { message: SpDailyMessage }) {
+export function DailyMessageView({ msg: message }: { msg: SpDailyMessage }) {
   const [open, setOpen] = useState(false);
   const [acted, setActed] = useState(!!message.acted_at);
   const [pending, start] = useTransition();
