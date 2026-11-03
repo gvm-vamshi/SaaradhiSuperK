@@ -5,6 +5,7 @@ import { Shield } from 'lucide-react';
 import { priorityColor, statusColor, formatDate, type Ticket } from '@/lib/types';
 import Link from 'next/link';
 import { TicketFilters } from './TicketFilters';
+import { ExportTicketsButton } from '@/app/components/ExportTicketsButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,6 +50,7 @@ export default async function AdminAllTickets({ searchParams }: { searchParams: 
         <div className="px-6 py-4 border-b border-slate-100">
           <div className="flex items-center justify-between mb-3">
             <div className="font-semibold">All tickets ({tickets.length}{tickets.length !== allTickets.length ? ` of ${allTickets.length}` : ''})</div>
+            <ExportTicketsButton />
           </div>
           <TicketFilters
             storeNames={storeNames}
