@@ -32,6 +32,64 @@ function admin() {
   );
 }
 
+// ---- Bulk-order buttons (Approve / Reject / Mark added) ----
+async function handleBulkAction(payload: any): Promise<Response> {
+  const action = payload.actions?.[0];
+  const id = Number(action?.value);
+  const statusMap: Record<string, string> = {
+    bulk_approve: 'Approved', bulk_reject: 'Rejected', bulk_added: 'Added',
+  };
+  const status = statusMap[action?.action_id];
+  if (!status || !id) return new Response('', { status: 200 });
+
+  const db = admin();
+  const slackUserId: string = payload.user?.id ?? '';
+  const { data: spoc } = await db
+    .from('spoc_assignments').select('person_name')
+    .eq('slack_user_id', slackUserId).limit(1).maybeSingle();
+  const actorName = spoc?.person_name ?? payload.user?.name ?? payload.user?.username ?? 'Team';
+
+  await db.from('bulk_orders')
+    .update({ status, decided_at: new Date().toISOString(), note: 'Slack: ' + actorName })
+    .eq('id', id);
+
+  const { data: o } = await db.from('bulk_orders')
+    .select('order_code, store_name, delivery_date, items, line_count, total_qty, status')
+    .eq('id', id).single();
+
+  const responseUrl: string = payload.response_url;
+  if (responseUrl && o) {
+    const itemLines = (o.items || []).map((it: any) => `• ${it.name}  ×  ${it.qty}`).join('\n');
+    const emoji: Record<string, string> = { Approved: '🟦', Rejected: '🟥', Added: '🟩' };
+    const blocks: any[] = [
+      { type: 'header', text: { type: 'plain_text', text: `🧾 Bulk order — ${o.store_name}` } },
+      { type: 'section', text: { type: 'mrkdwn', text:
+        `*Order:* ${o.order_code}\n*Delivery date:* ${o.delivery_date}\n*Lines:* ${o.line_count}   *Total qty:* ${o.total_qty}` } },
+      { type: 'section', text: { type: 'mrkdwn', text: `*Items:*\n${itemLines}` } },
+    ];
+    if (o.status === 'Approved') {
+      blocks.push({
+        type: 'actions', block_id: `bulk_${id}`,
+        elements: [{
+          type: 'button', action_id: 'bulk_added', style: 'primary',
+          text: { type: 'plain_text', text: '📦 Mark added to cart' }, value: String(id),
+        }],
+      });
+    }
+    blocks.push({
+      type: 'context',
+      elements: [{ type: 'mrkdwn', text: `${emoji[o.status] || ''} Status: *${o.status}* — by ${actorName}` }],
+    });
+
+    await fetch(responseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ replace_original: true, blocks }),
+    });
+  }
+  return new Response('', { status: 200 });
+}
+
 export async function POST(req: Request) {
   console.log('SLACK: POST received');
 
@@ -54,6 +112,11 @@ export async function POST(req: Request) {
 
   const action = payload.actions?.[0];
   if (!action) return new Response('', { status: 200 });
+
+  // Bulk-order buttons go to their own handler.
+  if (typeof action.action_id === 'string' && action.action_id.startsWith('bulk_')) {
+    return handleBulkAction(payload);
+  }
 
   const ticketId = Number(action.value);
   const actionId: string = action.action_id;
