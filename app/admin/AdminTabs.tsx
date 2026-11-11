@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, Store, Ticket, Users, Settings, UserCog, CalendarDays } from 'lucide-react';
+import { BarChart3, Store, Ticket, Users, Settings, UserCog, CalendarDays, PackagePlus } from 'lucide-react';
 
 const TABS = [
   { href: '/admin',         label: 'Dashboard',      icon: <BarChart3 size={14} /> },
@@ -12,6 +12,7 @@ const TABS = [
   { href: '/admin/routing', label: 'Routing',        icon: <Settings size={14} /> },
   { href: '/admin/spocs',   label: 'SPOCs',          icon: <UserCog size={14} /> },
   { href: '/admin/daily',   label: 'Daily Messages', icon: <CalendarDays size={14} /> },
+  { href: '/admin/bulk',    label: 'Bulk Orders',    icon: <PackagePlus size={14} /> },
 ];
 
 export function AdminTabs() {

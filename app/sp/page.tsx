@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { Shell, KpiCard } from '@/app/components/Shell';
-import { User, Plus, Ticket as TicketIcon, MessageSquare, Clock, CheckCircle2, ChevronRight } from 'lucide-react';
+import { User, Plus, Ticket as TicketIcon, MessageSquare, Clock, CheckCircle2, ChevronRight, PackagePlus } from 'lucide-react';
 import { statusColor, type Ticket, type Profile, type Store } from '@/lib/types';
 import { DailyCard } from './DailyCard';
 
@@ -42,6 +42,7 @@ export default async function SpHome() {
           <div className="mt-6 flex gap-3 flex-wrap">
             <Link href="/sp/tickets/new" className="bg-white text-red-700 font-semibold px-5 py-3 rounded-lg hover:bg-red-50 flex items-center gap-2"><Plus size={18}/> Raise a query · ప్రశ్న ఇవ్వండి</Link>
             <Link href="/sp/tickets" className="bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-5 py-3 rounded-lg hover:bg-white/25 flex items-center gap-2"><TicketIcon size={18}/> My tickets ({all.length})</Link>
+            <Link href="/sp/bulk" className="bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-5 py-3 rounded-lg hover:bg-white/25 flex items-center gap-2"><PackagePlus size={18}/> Bulk Order · బల్క్ ఆర్డర్</Link>
           </div>
         </div>
 
