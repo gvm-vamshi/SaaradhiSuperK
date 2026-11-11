@@ -42,7 +42,9 @@ export default async function SpHome() {
           <div className="mt-6 flex gap-3 flex-wrap">
             <Link href="/sp/tickets/new" className="bg-white text-red-700 font-semibold px-5 py-3 rounded-lg hover:bg-red-50 flex items-center gap-2"><Plus size={18}/> Raise a query · ప్రశ్న ఇవ్వండి</Link>
             <Link href="/sp/tickets" className="bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-5 py-3 rounded-lg hover:bg-white/25 flex items-center gap-2"><TicketIcon size={18}/> My tickets ({all.length})</Link>
-            <Link href="/sp/bulk" className="bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-5 py-3 rounded-lg hover:bg-white/25 flex items-center gap-2"><PackagePlus size={18}/> Bulk Order · బల్క్ ఆర్డర్</Link>
+            {profile.stores?.bulk_order_enabled && (
+              <Link href="/sp/bulk" className="bg-white/15 backdrop-blur text-white border border-white/30 font-semibold px-5 py-3 rounded-lg hover:bg-white/25 flex items-center gap-2"><PackagePlus size={18}/> Bulk Order · బల్క్ ఆర్డర్</Link>
+            )}
           </div>
         </div>
 

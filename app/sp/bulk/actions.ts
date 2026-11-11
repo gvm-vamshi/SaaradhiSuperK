@@ -89,3 +89,18 @@ export async function updateBulkStatus(id: number, status: 'Approved' | 'Rejecte
   if (error) return { error: error.message };
   return { ok: true };
 }
+
+// --- Admin/agent: enable/disable bulk ordering for a store ---
+export async function setBulkEnabled(storeCode: string, enabled: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: 'Not authenticated.' };
+  const { data: me } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  if (!me || (me.role !== 'admin' && me.role !== 'agent')) return { error: 'Not allowed.' };
+  const { error } = await supabase
+    .from('stores')
+    .update({ bulk_order_enabled: enabled })
+    .eq('code', storeCode);
+  if (error) return { error: error.message };
+  return { ok: true };
+}
