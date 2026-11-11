@@ -29,16 +29,22 @@ export function cutoffISO(d: string): string {
     return dt.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' });
   }
   
-  export type SkuHit = { id: string; name: string; alias: string; sp: number };
+  export type SkuHit = { id: string; name: string; alias: string; sp: number; stock?: number };
   export type CartItem = SkuHit & { qty: number };
+  export type OrderItem = {
+    id: string; name: string; alias: string; sp: number; qty: number;
+    wh_stock?: number; sold_30d?: number; selling_days?: number; confirmed?: boolean;
+  };
   export type BulkOrder = {
     id: number;
     order_code: string;
     store_name: string;
     delivery_date: string;
-    items: CartItem[];
+    items: OrderItem[];
     line_count: number;
     total_qty: number;
+    reason?: string;
     status: string;
+    enriched?: boolean;
     created_at: string;
   };

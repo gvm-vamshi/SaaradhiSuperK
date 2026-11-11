@@ -15,8 +15,19 @@ export default async function SpBulkOrder() {
     .from('profiles').select('store_code').eq('id', user!.id).single();
 
   const { data: store } = await supabase
-    .from('stores').select('name').eq('code', profile?.store_code ?? '').single();
+    .from('stores').select('name, bulk_order_enabled').eq('code', profile?.store_code ?? '').single();
   const storeName = store?.name ?? profile?.store_code ?? '';
+
+  // Hidden unless admin/agent enabled bulk ordering for this store.
+  if (!store?.bulk_order_enabled) {
+    return (
+      <Shell title="Bulk Order · బల్క్ ఆర్డర్" icon={<PackagePlus size={20} />} accent="red">
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-amber-800">
+          బల్క్ ఆర్డర్ మీ store కి ఇంకా అందుబాటులో లేదు. (Bulk ordering isn’t enabled for your store yet. Please contact your SAE / ASM.)
+        </div>
+      </Shell>
+    );
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const { data: sched } = await supabase
@@ -32,7 +43,8 @@ export default async function SpBulkOrder() {
   // Recent orders by this store
   const { data: recent } = await supabase
     .from('bulk_orders')
-    .select('id, order_code, store_name, delivery_date, items, line_count, total_qty, status, created_at')
+    .select('id, order_code, store_name, delivery_date, items, line_count, total_qty, reason, status, enriched, created_at')
+    .eq('store_code', profile?.store_code ?? '')
     .order('created_at', { ascending: false })
     .limit(5) as unknown as { data: BulkOrder[] };
 

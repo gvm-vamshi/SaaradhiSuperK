@@ -16,7 +16,7 @@ export default async function BulkReviewPage({ searchParams }: { searchParams: P
   // Orders
   let q = supabase
     .from('bulk_orders')
-    .select('id, order_code, store_name, delivery_date, items, line_count, total_qty, status, created_at')
+    .select('id, order_code, store_name, delivery_date, items, line_count, total_qty, reason, status, enriched, created_at')
     .order('created_at', { ascending: false })
     .limit(200);
   if (status) q = q.eq('status', status);
